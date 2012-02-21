@@ -10,13 +10,53 @@ our $LASTERRORSTRING = '';#error messages of functions
 our @DEVICE_LIST = ();
 struct gpu_info_t => [
 	deviceID => '$',
+	deviceHandle => '$',
 	productName => '$',
 	nvmlMemoryInfo => '%',
-	nvmlClockInfo => '%'
+	nvmlClockInfo => '%',
+	nvmlDevicePciInfo => '%',
+	nvmlDeviceComputeMode => '$',
+	nvmlDeviceFanSpeed => '$',
+	nvmlGpuTemperature => '$',
+	nvmlDeviceUtilizationRates => '%'
 ];
 
 sub get_nvml_version;#forward decl
-
+sub handle_error{
+	my $return = $_[0];
+	my $value = $_[1];
+	my $is_hash = $_[2];
+	
+	if($return == $NVML_SUCCESS){
+		return $value;
+	}
+	else{
+		if($return == $NVML_ERROR_NOT_SUPPORTED){
+			if(defined $is_hash){
+				my %error_pair = ('Error',"N/A");				
+				return \%error_pair;
+			}			
+			return "N/A";	
+		}
+		else{
+			if(defined $is_hash){
+				my %error_pair = ('Error',nvmlErrorString($return));				
+				return \%error_pair;
+			}	
+			return nvmlErrorString($return);
+		}
+	}	
+}
+sub print_hash_values{
+	my %hash = %{$_[0]};
+	if(exists $hash{'Error'}){
+		print "Error: ".$hash{'Error'}."\n";
+		return;
+	}
+	foreach my $k (keys %hash) {
+		print "$k: $hash{$k}\n";
+	}
+}
 sub get_version{
 	if(get_nvml_version() eq "NOK"){
 		print "Error while fetching nvml version.\n";
@@ -33,7 +73,6 @@ check_nvml_gpu -H <hostname>
   [-f <NVML config file> | [-b] [-T <sensor type>] [-x <sensor id>] [-v 1|2|3]
   [-h] [-V]"
 }
-
 sub check_nvml_setup{
 	#TODO Check for location of nvml library
 	my $return = '';
@@ -79,51 +118,46 @@ sub get_device_count{
 }
 sub get_device_clock{
 	my $current_device = shift;
-	my ($return, $handle) = nvmlDeviceGetHandleByIndex($current_device->deviceID);
-	if($return != $NVML_SUCCESS){
-		$LASTERRORSTRING = nvmlErrorString($return);
-		return "NOK";
-	}
 	my %clock_hash;
-	my $value;
-	($return,$value) = nvmlDeviceGetClockInfo($handle,$NVML_CLOCK_GRAPHICS);
-	if ($return != $NVML_SUCCESS){
-		$LASTERRORSTRING = nvmlErrorString($return);
-		return "NOK";
-	}
-	$clock_hash{"Graphics Clock"} = $value;
-	($return,$value) = nvmlDeviceGetClockInfo($handle,$NVML_CLOCK_SM);
-	if ($return != $NVML_SUCCESS){
-		$LASTERRORSTRING = nvmlErrorString($return);
-		return "NOK";
-	}
-	$clock_hash{"SM Clock"} = $value;
-	($return,$value) = nvmlDeviceGetClockInfo($handle,$NVML_CLOCK_MEM);
-	if ($return != $NVML_SUCCESS){
-		$LASTERRORSTRING = nvmlErrorString($return);
-		return "NOK"
-	}
-	$clock_hash{"Memory Clock"} = $value;
-	return %clock_hash;
+	my ($return,$value);
+	($return,$value) = nvmlDeviceGetClockInfo($current_device->deviceHandle,$NVML_CLOCK_GRAPHICS);
+	$clock_hash{'Graphics Clock'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetClockInfo($current_device->deviceHandle,$NVML_CLOCK_SM);
+	$clock_hash{'SM Clock'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetClockInfo($current_device->deviceHandle,$NVML_CLOCK_MEM);
+	$clock_hash{'Memory Clock'} = handle_error($return,$value);
+	
+	return \%clock_hash;
 }
-
-
 sub get_device_status{
 	my $current_device = shift;
-	my ($return, $handle, $value) = 0;
-	($return, $handle) = nvmlDeviceGetHandleByIndex($current_device->deviceID);
-	if($return != $NVML_SUCCESS){
-		$LASTERRORSTRING = nvmlErrorString($return);
-		return "NOK";
-	}
-	($return,$value) = nvmlDeviceGetName($handle);
-	$current_device->productName($value);
+	my ($return, $value) = 0;
 	
-	($return,$value) = nvmlDeviceGetMemoryInfo($handle);
-	$current_device->nvmlMemoryInfo($value);
+	($return,$value) = nvmlDeviceGetName($current_device->deviceHandle);
+	$current_device->productName(handle_error($return,$value));
 	
-	$return = get_device_clock($current_device);
-	$current_device->nvmlClockInfo($return) if($return ne "NOK");
+	($return,$value) = nvmlDeviceGetComputeMode($current_device->deviceHandle);
+	$current_device->nvmlDeviceComputeMode(handle_error($return,$value));	
+	
+	($return,$value) = nvmlDeviceGetFanSpeed($current_device->deviceHandle);
+	$current_device->nvmlDeviceFanSpeed(handle_error($return,$value));
+	
+	($return,$value) = nvmlDeviceGetTemperature($current_device->deviceHandle,$NVML_TEMPERATURE_GPU);
+	$current_device->nvmlGpuTemperature(handle_error($return,$value));
+	
+	($return,$value) = nvmlDeviceGetMemoryInfo($current_device->deviceHandle);
+	$current_device->nvmlMemoryInfo(handle_error($return,$value,1));
+	
+	($return,$value) = nvmlDeviceGetPciInfo($current_device->deviceHandle);
+	$current_device->nvmlDevicePciInfo(handle_error($return,$value,1));
+	
+	($return,$value) = nvmlDeviceGetUtilizationRates($current_device->deviceHandle);
+	$current_device->nvmlDeviceUtilizationRates(handle_error($return,$value,1));
+	
+	$return = get_device_clock($current_device);	
+	$current_device->nvmlClockInfo($return);	
 			
 	return $current_device;
 }
@@ -142,7 +176,16 @@ sub get_device_stati{
 	for (my $i = 0; $i < $count; $i++){
 		my $gpu = new gpu_info_t;
 		$gpu->deviceID($i);
+		my ($return, $handle) = nvmlDeviceGetHandleByIndex($gpu->deviceID);
+		if($return != $NVML_SUCCESS){
+			print "Error: Cannot get handle for device: ".nvmlErrorString($return)."\n";
+			next;
+		}
+		$gpu->deviceHandle($handle);			
 		$gpu = get_device_status($gpu);
+		if($gpu eq "NOK"){
+			next;
+		}
 		push(@DEVICE_LIST,$gpu);	
 	}	
 }
@@ -204,19 +247,27 @@ MAIN: {
 	get_device_stati();
 	print "Debug: Device list\n";
 	foreach my $device (@DEVICE_LIST){
+		my %hash;
 		print "Device ID: ".$device->deviceID."\n" if(defined ($device->deviceID));
 		print "Model name: ".$device->productName."\n" if(defined ($device->productName));
+		if(defined ($device->nvmlDeviceComputeMode)){
+			my @computeModes = qw( Default Thread Prohibit Process );
+			print "Compute mode: ".$computeModes[$device->nvmlDeviceComputeMode]."\n" 
+		}
+		print "Fan Speed: ".$device->nvmlDeviceFanSpeed."\n" if(defined ($device->nvmlDeviceFanSpeed));
+		print "Gpu Temperature: ".$device->nvmlGpuTemperature."\n" if(defined ($device->nvmlGpuTemperature));
+		
 		if(defined ($device->nvmlMemoryInfo)){
-			my %hash = %{$device->nvmlMemoryInfo};
-			foreach my $k (keys %hash) {
-				print "$k: $hash{$k}\n";
-			}
+			print_hash_values($device->nvmlMemoryInfo);			
+		}
+		if(defined ($device->nvmlDevicePciInfo)){
+			print_hash_values($device->nvmlDevicePciInfo)
+		}
+		if(defined ($device->nvmlDeviceUtilizationRates)){
+			print_hash_values($device->nvmlDeviceUtilizationRates);
 		}
 		if(defined ($device->nvmlClockInfo)){
-			my %hash = %{$device->nvmlClockInfo};
-			foreach my $k (keys %hash) {
-				print "$k: $hash{$k}\n";
-			}
+			print_hash_values($device->nvmlClockInfo);
 		}
 	}
 	
