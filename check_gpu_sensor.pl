@@ -50,11 +50,11 @@ sub handle_error{
 sub print_hash_values{
 	my %hash = %{$_[0]};
 	if(exists $hash{'Error'}){
-		print "Error: ".$hash{'Error'}."\n";
+		print "Status: ".$hash{'Error'}."\n";
 		return;
 	}
 	foreach my $k (keys %hash) {
-		print "$k: $hash{$k}\n";
+		print "\t$k: $hash{$k}\n";
 	}
 }
 sub get_version{
@@ -117,49 +117,51 @@ sub get_device_count{
 	}
 }
 sub get_device_clock{
-	my $current_device = shift;
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
 	my %clock_hash;
 	my ($return,$value);
-	($return,$value) = nvmlDeviceGetClockInfo($current_device->deviceHandle,$NVML_CLOCK_GRAPHICS);
+	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
 	$clock_hash{'Graphics Clock'} = handle_error($return,$value);
 	
-	($return,$value) = nvmlDeviceGetClockInfo($current_device->deviceHandle,$NVML_CLOCK_SM);
+	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_SM);
 	$clock_hash{'SM Clock'} = handle_error($return,$value);
 	
-	($return,$value) = nvmlDeviceGetClockInfo($current_device->deviceHandle,$NVML_CLOCK_MEM);
+	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_MEM);
 	$clock_hash{'Memory Clock'} = handle_error($return,$value);
 	
 	return \%clock_hash;
 }
 sub get_device_status{
-	my $current_device = shift;
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
 	my ($return, $value) = 0;
 	
-	($return,$value) = nvmlDeviceGetName($current_device->deviceHandle);
-	$current_device->productName(handle_error($return,$value));
+	($return,$value) = nvmlDeviceGetName($current_device{'deviceHandle'});
+	$current_device{'productName'} = (handle_error($return,$value));
 	
-	($return,$value) = nvmlDeviceGetComputeMode($current_device->deviceHandle);
-	$current_device->nvmlDeviceComputeMode(handle_error($return,$value));	
+	($return,$value) = nvmlDeviceGetComputeMode($current_device{'deviceHandle'});
+	$current_device{'nvmlDeviceComputeMode'} = (handle_error($return,$value));	
 	
-	($return,$value) = nvmlDeviceGetFanSpeed($current_device->deviceHandle);
-	$current_device->nvmlDeviceFanSpeed(handle_error($return,$value));
+	($return,$value) = nvmlDeviceGetFanSpeed($current_device{'deviceHandle'});
+	$current_device{'nvmlDeviceFanSpeed'} = (handle_error($return,$value));
 	
-	($return,$value) = nvmlDeviceGetTemperature($current_device->deviceHandle,$NVML_TEMPERATURE_GPU);
-	$current_device->nvmlGpuTemperature(handle_error($return,$value));
+	($return,$value) = nvmlDeviceGetTemperature($current_device{'deviceHandle'},$NVML_TEMPERATURE_GPU);
+	$current_device{'nvmlGpuTemperature'} = (handle_error($return,$value));
 	
-	($return,$value) = nvmlDeviceGetMemoryInfo($current_device->deviceHandle);
-	$current_device->nvmlMemoryInfo(handle_error($return,$value,1));
+	($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
+	$current_device{'nvmlMemoryInfo'} = (handle_error($return,$value));
 	
-	($return,$value) = nvmlDeviceGetPciInfo($current_device->deviceHandle);
-	$current_device->nvmlDevicePciInfo(handle_error($return,$value,1));
+	($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
+	$current_device{'nvmlDevicePciInfo'} = (handle_error($return,$value));
 	
-	($return,$value) = nvmlDeviceGetUtilizationRates($current_device->deviceHandle);
-	$current_device->nvmlDeviceUtilizationRates(handle_error($return,$value,1));
+	($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
+	$current_device{'nvmlDeviceUtilizationRates'} = (handle_error($return,$value));
 	
-	$return = get_device_clock($current_device);	
-	$current_device->nvmlClockInfo($return);	
+	$return = get_device_clock($current_ref);	
+	$current_device{'nvmlClockInfo'} = $return;	
 			
-	return $current_device;
+	return \%current_device;
 }
 sub get_device_stati{
 	my $count = get_device_count();
@@ -174,19 +176,17 @@ sub get_device_stati{
 	print "Debug: Found $count devices in current system.\n";	
 	
 	for (my $i = 0; $i < $count; $i++){
-		my $gpu = new gpu_info_t;
-		$gpu->deviceID($i);
-		my ($return, $handle) = nvmlDeviceGetHandleByIndex($gpu->deviceID);
+		my %gpu_h;
+		my $gpu_ref = \%gpu_h;
+		$gpu_h{'deviceID'} = $i;		
+		my ($return, $handle) = nvmlDeviceGetHandleByIndex($gpu_h{'deviceID'});
 		if($return != $NVML_SUCCESS){
 			print "Error: Cannot get handle for device: ".nvmlErrorString($return)."\n";
 			next;
 		}
-		$gpu->deviceHandle($handle);			
-		$gpu = get_device_status($gpu);
-		if($gpu eq "NOK"){
-			next;
-		}
-		push(@DEVICE_LIST,$gpu);	
+		$gpu_h{'deviceHandle'} = $handle;			
+		$gpu_ref = get_device_status(\%gpu_h);
+		push(@DEVICE_LIST,$gpu_ref);	
 	}	
 }
 MAIN: {
@@ -247,43 +247,22 @@ MAIN: {
 	get_device_stati();
 	print "Debug: Device list\n";
 	foreach my $device (@DEVICE_LIST){
-		my %hash;
-		print "Device ID: ".$device->deviceID."\n" if(defined ($device->deviceID));
-		print "Model name: ".$device->productName."\n" if(defined ($device->productName));
-		if(defined ($device->nvmlDeviceComputeMode)){
-			my @computeModes = qw( Default Thread Prohibit Process );
-			print "Compute mode: ".$computeModes[$device->nvmlDeviceComputeMode]."\n" 
-		}
-		print "Fan Speed: ".$device->nvmlDeviceFanSpeed."\n" if(defined ($device->nvmlDeviceFanSpeed));
-		print "Gpu Temperature: ".$device->nvmlGpuTemperature."\n" if(defined ($device->nvmlGpuTemperature));
-		
-		if(defined ($device->nvmlMemoryInfo)){
-			print_hash_values($device->nvmlMemoryInfo);			
-		}
-		if(defined ($device->nvmlDevicePciInfo)){
-			print_hash_values($device->nvmlDevicePciInfo)
-		}
-		if(defined ($device->nvmlDeviceUtilizationRates)){
-			print_hash_values($device->nvmlDeviceUtilizationRates);
-		}
-		if(defined ($device->nvmlClockInfo)){
-			print_hash_values($device->nvmlClockInfo);
+		foreach my $k (keys %$device) {
+			if($k eq "deviceHandle"){
+				next;
+			}
+			if(ref($device->{$k}) eq "HASH"){
+				print "$k:\n";
+				print_hash_values($device->{$k})
+			}
+			elsif(ref($device->{$k}) eq "SCALAR"){
+				print "$k: $$device->{$k}\n";
+			}
+			else{
+				print "$k: $device->{$k}\n";	
+			}
+			
 		}
 	}
-	
-	
-
-	exit(0);
-	
-	
-#	
-#	if(@sensor_list){
-#		@sensor_list = split(/,/, join(',', @sensor_list));
-#		print "@sensor_list";
-#		exit(0);
-#	}
-#		
-#	if($sensor_list[0] eq "temp"){
-#		print "calling temp";
-#	}
+	exit(0);	
 }
