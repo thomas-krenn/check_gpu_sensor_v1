@@ -76,7 +76,8 @@ check_nvml_gpu -H <hostname>
 sub check_nvml_setup{
 	#TODO Check for location of nvml library
 	my $return = '';
-	if(!(-e "/usr/lib32/libnvidia-ml.so")){
+	if(!(-e "/usr/lib32/libnvidia-ml.so") &&
+		!(-e "/usr/lib32/nvidia-current/libnvidia-ml.so")){
 		$LASTERRORSTRING = "Nvml library not found on system";
 		return "NOK";
 	}
