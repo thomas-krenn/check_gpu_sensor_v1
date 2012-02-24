@@ -1,25 +1,13 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use nvidia::ml qw(:all);
+#use nvidia::ml qw(:all);
 use Getopt::Long;
 use Class::Struct;
 
-our $VERBOSITY = 0;
-our $LASTERRORSTRING = '';#error messages of functions
-our @DEVICE_LIST = ();
-struct gpu_info_t => [
-	deviceID => '$',
-	deviceHandle => '$',
-	productName => '$',
-	nvmlMemoryInfo => '%',
-	nvmlClockInfo => '%',
-	nvmlDevicePciInfo => '%',
-	nvmlDeviceComputeMode => '$',
-	nvmlDeviceFanSpeed => '$',
-	nvmlGpuTemperature => '$',
-	nvmlDeviceUtilizationRates => '%'
-];
+our $VERBOSITY = 0; #The current verbosity level
+our $LASTERRORSTRING = ''; #Error messages of functions
+our @DEVICE_LIST = (); #Array of GPUs in current system
 
 sub get_nvml_version;#forward decl
 sub handle_error{
@@ -28,13 +16,16 @@ sub handle_error{
 	my $is_hash = $_[2];
 	
 	if($return == $NVML_SUCCESS){
-		return $value;
+		return $value;	
 	}
 	else{
 		if($return == $NVML_ERROR_NOT_SUPPORTED){
 			if(defined $is_hash){
-				my %error_pair = ('Error',"N/A");				
-				return \%error_pair;
+				foreach my $k (keys %$value){
+					$value->{$k} = "N/A";
+					
+				}
+				return $value;
 			}			
 			return "N/A";	
 		}
@@ -54,7 +45,13 @@ sub print_hash_values{
 		return;
 	}
 	foreach my $k (keys %hash) {
-		print "\t$k: $hash{$k}\n";
+		if(ref($hash{$k}) eq "HASH"){
+				print "$k:\n";
+				print_hash_values($hash{$k})
+		}
+		else{
+			print "\t$k: $hash{$k}\n";
+		}
 	}
 }
 sub get_version{
@@ -123,15 +120,78 @@ sub get_device_clock{
 	my %clock_hash;
 	my ($return,$value);
 	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
-	$clock_hash{'Graphics Clock'} = handle_error($return,$value);
+	$clock_hash{'graphicsClock'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_SM);
-	$clock_hash{'SM Clock'} = handle_error($return,$value);
+	$clock_hash{'SMClock'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_MEM);
-	$clock_hash{'Memory Clock'} = handle_error($return,$value);
+	$clock_hash{'memClock'} = handle_error($return,$value);
 	
 	return \%clock_hash;
+}
+sub get_device_inforom{
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
+	my %inforom_hash;
+	my ($return,$value);
+	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_OEM);
+	$inforom_hash{'OEMinforom'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_ECC);
+	$inforom_hash{'ECCinforom'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_POWER);
+	$inforom_hash{'Powerinforom'} = handle_error($return,$value);
+	
+	return \%inforom_hash;
+}
+sub get_device_ecc{
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
+	my %ecc_hash;
+	my ($return,$value,$value1);
+	($return,$value,$value1) = nvmlDeviceGetEccMode($current_device{'deviceHandle'});
+	$ecc_hash{'currentECCMode'} = handle_error($return,$value);
+	$ecc_hash{'pendingECCMode'} = handle_error($return,$value1);
+	
+	($return,$value) = nvmlDeviceGetDetailedEccErrors($current_device{'deviceHandle'},$NVML_SINGLE_BIT_ECC,$NVML_VOLATILE_ECC);
+	$ecc_hash{'volatileSingle'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetDetailedEccErrors($current_device{'deviceHandle'},$NVML_DOUBLE_BIT_ECC,$NVML_VOLATILE_ECC);
+	$ecc_hash{'volatileDouble'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetDetailedEccErrors($current_device{'deviceHandle'},$NVML_SINGLE_BIT_ECC,$NVML_AGGREGATE_ECC);
+	$ecc_hash{'aggregateSingle'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetDetailedEccErrors($current_device{'deviceHandle'},$NVML_DOUBLE_BIT_ECC,$NVML_AGGREGATE_ECC);
+	$ecc_hash{'aggregateDouble'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetTotalEccErrors($current_device{'deviceHandle'},$NVML_SINGLE_BIT_ECC,$NVML_VOLATILE_ECC);
+	$ecc_hash{'volatileSingleTotal'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetTotalEccErrors($current_device{'deviceHandle'},$NVML_DOUBLE_BIT_ECC,$NVML_VOLATILE_ECC);
+	$ecc_hash{'volatileDoubleTotal'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetTotalEccErrors($current_device{'deviceHandle'},$NVML_SINGLE_BIT_ECC,$NVML_AGGREGATE_ECC);
+	$ecc_hash{'aggregateSingleTotal'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetTotalEccErrors($current_device{'deviceHandle'},$NVML_DOUBLE_BIT_ECC,$NVML_AGGREGATE_ECC);
+	$ecc_hash{'aggregateDoubleTotal	'} = handle_error($return,$value);
+	
+	return \%ecc_hash;
+}
+sub get_device_power{
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
+	my %power_hash;
+	my ($return,$value);
+	
+	#TODO Check if GPU supports power infos (inforom version > 0)
+	($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'};
+	%power_hash{'pwManagementMode'} = handle_error($return,$value);
+	
+	return \%power_hash;
 }
 sub get_device_status{
 	my $current_ref = shift;
@@ -160,7 +220,13 @@ sub get_device_status{
 	$current_device{'nvmlDeviceUtilizationRates'} = (handle_error($return,$value));
 	
 	$return = get_device_clock($current_ref);	
-	$current_device{'nvmlClockInfo'} = $return;	
+	$current_device{'nvmlClockInfo'} = $return;
+	
+	$return = get_device_inforom($current_ref);	
+	$current_device{'nvmlDeviceInforom'} = $return;
+	
+	$return = get_device_ecc($current_ref);	
+	$current_device{'nvmlDeviceEccInfos'} = $return;
 			
 	return \%current_device;
 }
@@ -206,7 +272,7 @@ MAIN: {
 	$result = nvmlInit();
 	if($result != $NVML_SUCCESS){
 		print "Debug: NVML initialization failed.\n";
-		print "Error: ".$LASTERRORSTRING.".\n";
+		print "Error: ".nvmlErrorString($result).".\n";
 		exit(3);
 	}
 	
@@ -250,7 +316,7 @@ MAIN: {
 	foreach my $device (@DEVICE_LIST){
 		foreach my $k (keys %$device) {
 			if($k eq "deviceHandle"){
-				next;
+				next;#we don't want to print driver handles
 			}
 			if(ref($device->{$k}) eq "HASH"){
 				print "$k:\n";
