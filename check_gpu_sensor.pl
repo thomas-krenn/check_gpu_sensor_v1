@@ -3,13 +3,16 @@ use strict;
 use warnings;
 use nvidia::ml qw(:all);
 use Getopt::Long;
-use Class::Struct;
 
 our $VERBOSITY = 0; #The current verbosity level
 our $LASTERRORSTRING = ''; #Error messages of functions
 our @DEVICE_LIST = (); #Array of GPUs in current system
+our %EXCLUDE_LIST = (
+	deviceHandle => '1',
+	deviceID => '1',
+	nvmlDevicePciInfo => '1'
+);
 
-sub get_nvml_version;#forward decl
 sub handle_error{
 	my $return = $_[0];
 	my $value = $_[1];
@@ -54,15 +57,41 @@ sub print_hash_values{
 		}
 	}
 }
+sub check_hash_for_perf{
+	my $hash_ref = shift;
+	my $perf_data_ref = shift;
+	my %hash = %$hash_ref;
+	
+	if(exists $hash{'Error'}){
+		print "Status: ".$hash{'Error'}."\n";
+		return;
+	}
+	
+	foreach my $k (keys %hash) {
+		if(ref($hash{$k}) eq "HASH"){
+			check_hash_for_perf($hash{$k},$perf_data_ref);
+		}
+		elsif(ref($hash{$k}) eq "SCALAR"){
+				push(@$perf_data_ref,"$k:${$hash{$k}}");
+		}
+		else{
+			if ($hash{$k} =~ /^[+-]?\d+$/ ){
+				push(@$perf_data_ref,"$k:$hash{$k},");
+			}
+		}
+	}
+	return $perf_data_ref;
+}
+
 sub get_version{
-	if(get_nvml_version() eq "NOK"){
-		print "Error while fetching nvml version.\n";
+	if(get_driver_version() eq "NOK"){
+		print "Error while fetching nvidia driver version: $LASTERRORSTRING\n";
 		exit(3);		
 	}
 	return "check_nvml_gpu version 0.0 alpha 2011-11-12
 Copyright (C) 2011 Thomas-Krenn.AG (written by Georg Schönberger)
 Current update available at http://www.thomas-krenn.com/en/oss/nvml-plugin.
-Your system is using nvml version: ".get_nvml_version();
+Your system is using nvidia driver version: ".get_driver_version();
 }
 sub get_usage{
 	return "Usage:
@@ -83,8 +112,9 @@ sub check_nvml_setup{
 	}
 }
 sub get_nvml_version{
+	#TODO Check if nvml version can be used? Currently not working with bindings under driver 280
 	my ($return, $version);
-	($return,$version) = nvmlSystemGetNVMLVersion();
+	nvmlSystemGetNVMLVersion();
 	if($return == $NVML_SUCCESS){
 		return $version;
 	}
@@ -227,6 +257,9 @@ sub get_device_status{
 	
 	$return = get_device_ecc($current_ref);	
 	$current_device{'nvmlDeviceEccInfos'} = $return;
+	
+	$return = get_device_power($current_ref);	
+	$current_device{'nvmlDevicePowerInfos'} = $return;
 			
 	return \%current_device;
 }
@@ -304,12 +337,11 @@ MAIN: {
 	}	
 
 	if(($result = get_driver_version()) eq "NOK"){
-		print "Debug: Get driver version failed.\n";
-		print "Error: ".$LASTERRORSTRING.".\n";
+		print "Error: driver version - ".$LASTERRORSTRING.".\n";
 		exit(3);
 	}
 	else{
-		print "Debug: System NVIDIA driver version: ".$result."\n";
+		print "DEBUG: System NVIDIA driver version: ".$result."\n";
 	}
 	get_device_stati();
 	print "Debug: Device list\n";
@@ -331,5 +363,43 @@ MAIN: {
 			
 		}
 	}
+	my @perf_data = ("Performance: ");
+	my $perf_data_ref = \@perf_data;
+	
+	#fetch the desired sensors
+	if(!@sensor_list){
+		@sensor_list = split(/,/, join(',', @sensor_list));
+	}
+		
+	#Check for performance values
+	foreach my $device (@DEVICE_LIST){
+		foreach my $k (keys %$device) {
+			#we don't want to print values present in exclude list
+			if(exists $EXCLUDE_LIST{$k}){
+				next;
+			}
+			#if a sensor list is given we only print these ones
+			if(@sensor_list && (grep(/$k/,@sensor_list)== 0)){
+				next;
+			}
+			#if the current key points to a hash reference, check
+			#it for performance values	
+			if(ref($device->{$k}) eq "HASH"){
+				$perf_data_ref = check_hash_for_perf($device->{$k},$perf_data_ref);
+			}
+			elsif(ref($device->{$k}) eq "SCALAR"){
+				push(@$perf_data_ref,"$k:${$device->{$k}},");
+			}
+			else{
+				#check if it is a number
+				if ($device->{$k} =~ /^[+-]?\d+$/ ){
+					push(@$perf_data_ref,"$k:$device->{$k},");
+				}
+			}
+		}
+	}
+	use Data::Dumper;
+	print Dumper(\@perf_data);
+		
 	exit(0);	
 }
