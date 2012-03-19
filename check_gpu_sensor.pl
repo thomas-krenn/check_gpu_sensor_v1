@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-#use nvidia::ml qw(:all);
+use nvidia::ml qw(:all);
 use Getopt::Long;
 use Class::Struct;
 
@@ -188,8 +188,8 @@ sub get_device_power{
 	my ($return,$value);
 	
 	#TODO Check if GPU supports power infos (inforom version > 0)
-	($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'};
-	%power_hash{'pwManagementMode'} = handle_error($return,$value);
+	($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
+	$power_hash{'pwManagementMode'} = handle_error($return,$value);
 	
 	return \%power_hash;
 }
