@@ -4,6 +4,9 @@ use warnings;
 use nvidia::ml qw(:all);
 use Getopt::Long;
 
+###############################################
+# Global Variables in the current scope
+###############################################
 our $VERBOSITY = 0; #The current verbosity level
 our $LASTERRORSTRING = ''; #Error messages of functions
 our @DEVICE_LIST = (); #Array of GPUs in current system
@@ -13,76 +16,10 @@ our %EXCLUDE_LIST = (
 	nvmlDevicePciInfo => '1'
 );
 
-sub handle_error{
-	my $return = $_[0];
-	my $value = $_[1];
-	my $is_hash = $_[2];
-	
-	if($return == $NVML_SUCCESS){
-		return $value;	
-	}
-	else{
-		if($return == $NVML_ERROR_NOT_SUPPORTED){
-			if(defined $is_hash){
-				foreach my $k (keys %$value){
-					$value->{$k} = "N/A";
-					
-				}
-				return $value;
-			}			
-			return "N/A";	
-		}
-		else{
-			if(defined $is_hash){
-				my %error_pair = ('Error',nvmlErrorString($return));				
-				return \%error_pair;
-			}	
-			return nvmlErrorString($return);
-		}
-	}	
-}
-sub print_hash_values{
-	my %hash = %{$_[0]};
-	if(exists $hash{'Error'}){
-		print "Status: ".$hash{'Error'}."\n";
-		return;
-	}
-	foreach my $k (keys %hash) {
-		if(ref($hash{$k}) eq "HASH"){
-				print "$k:\n";
-				print_hash_values($hash{$k})
-		}
-		else{
-			print "\t$k: $hash{$k}\n";
-		}
-	}
-}
-sub check_hash_for_perf{
-	my $hash_ref = shift;
-	my $perf_data_ref = shift;
-	my %hash = %$hash_ref;
-	
-	if(exists $hash{'Error'}){
-		print "Status: ".$hash{'Error'}."\n";
-		return;
-	}
-	
-	foreach my $k (keys %hash) {
-		if(ref($hash{$k}) eq "HASH"){
-			check_hash_for_perf($hash{$k},$perf_data_ref);
-		}
-		elsif(ref($hash{$k}) eq "SCALAR"){
-				push(@$perf_data_ref,"$k:${$hash{$k}}");
-		}
-		else{
-			if ($hash{$k} =~ /^[+-]?\d+$/ ){
-				push(@$perf_data_ref,"$k:$hash{$k},");
-			}
-		}
-	}
-	return $perf_data_ref;
-}
-
+###############################################
+# Plugin specific functions
+# They return help messages and version information
+###############################################
 sub get_version{
 	if(get_driver_version() eq "NOK"){
 		print "Error while fetching nvidia driver version: $LASTERRORSTRING\n";
@@ -111,6 +48,92 @@ sub check_nvml_setup{
 		return "OK";
 	}
 }
+###############################################
+# Helper functions 
+# They check for errors and print several structs
+###############################################
+
+# Checking for errors returned by the nvml library
+# If a functionality is not supported "N/A" is returned
+sub handle_error{
+	my $return = $_[0];
+	my $value = $_[1];
+	my $is_hash = $_[2];
+	
+	if($return == $NVML_SUCCESS){
+		return $value;	
+	}
+	else{
+		if($return == $NVML_ERROR_NOT_SUPPORTED){
+			if(defined $is_hash){
+				foreach my $k (keys %$value){
+					$value->{$k} = "N/A";					
+				}
+				return $value;
+			}			
+			return "N/A";	
+		}
+		else{
+			if(defined $is_hash){
+				my %error_pair = ('Error',nvmlErrorString($return));				
+				return \%error_pair;
+			}	
+			return nvmlErrorString($return);
+		}
+	}	
+}
+
+#Print the value of the status hash
+sub print_hash_values{
+	my %hash = %{$_[0]};
+	if(exists $hash{'Error'}){
+		print "Status: ".$hash{'Error'}."\n";
+		return;
+	}
+	foreach my $k (keys %hash) {
+		if(ref($hash{$k}) eq "HASH"){
+				print "$k:\n";
+				print_hash_values($hash{$k})
+		}
+		else{
+			print "\t$k: $hash{$k}\n";
+		}
+	}
+}
+
+#Check a hash for performance data
+sub check_hash_for_perf{
+	my $hash_ref = shift;
+	my $perf_data_ref = shift;
+	my %hash = %$hash_ref;
+	
+	if(exists $hash{'Error'}){
+		print "Status: ".$hash{'Error'}."\n";
+		return;
+	}	
+	foreach my $k (keys %hash) {
+		if(ref($hash{$k}) eq "HASH"){
+			check_hash_for_perf($hash{$k},$perf_data_ref);
+		}
+		elsif(ref($hash{$k}) eq "SCALAR"){
+			#found a ref to a numeric value
+			#deref it and push it to hash
+			push(@$perf_data_ref,"$k:${$hash{$k}}");
+		}
+		else{
+			if ($hash{$k} =~ /^[+-]?\d+$/ ){
+				#found a numeric value, push it to the given hash reference
+				push(@$perf_data_ref,"$k:$hash{$k},");
+			}
+		}
+	}
+	return $perf_data_ref;
+}
+
+###############################################
+# System specific functions 
+# They are used to collect information about the current system
+###############################################
 sub get_nvml_version{
 	#TODO Check if nvml version can be used? Currently not working with bindings under driver 280
 	my ($return, $version);
@@ -144,6 +167,10 @@ sub get_device_count{
 		return "NOK";
 	}
 }
+###############################################
+# Device specific functions 
+# They are used to query parameters from a device
+###############################################
 sub get_device_clock{
 	my $current_ref = shift;
 	my %current_device = %$current_ref;
@@ -273,8 +300,8 @@ sub get_device_stati{
 		print "Error: No NVIDIA device found in current system.\n";
 		exit(3);
 	}
-	print "Debug: Found $count devices in current system.\n";	
-	
+	#for each device fetch a driver handle and call
+	#the function to get the device status informations
 	for (my $i = 0; $i < $count; $i++){
 		my %gpu_h;
 		my $gpu_ref = \%gpu_h;
@@ -340,29 +367,28 @@ MAIN: {
 		print "Error: driver version - ".$LASTERRORSTRING.".\n";
 		exit(3);
 	}
-	else{
-		print "DEBUG: System NVIDIA driver version: ".$result."\n";
-	}
+	
+	#Collect the informations about the devices in the system
 	get_device_stati();
-	print "Debug: Device list\n";
-	foreach my $device (@DEVICE_LIST){
-		foreach my $k (keys %$device) {
-			if($k eq "deviceHandle"){
-				next;#we don't want to print driver handles
-			}
-			if(ref($device->{$k}) eq "HASH"){
-				print "$k:\n";
-				print_hash_values($device->{$k})
-			}
-			elsif(ref($device->{$k}) eq "SCALAR"){
-				print "$k: $$device->{$k}\n";
-			}
-			else{
-				print "$k: $device->{$k}\n";	
-			}
-			
-		}
-	}
+#	print "Debug: Device list\n";
+#	foreach my $device (@DEVICE_LIST){
+#		foreach my $k (keys %$device) {
+#			if($k eq "deviceHandle"){
+#				next;#we don't want to print driver handles
+#			}
+#			if(ref($device->{$k}) eq "HASH"){
+#				print "$k:\n";
+#				print_hash_values($device->{$k})
+#			}
+#			elsif(ref($device->{$k}) eq "SCALAR"){
+#				print "$k: $$device->{$k}\n";
+#			}
+#			else{
+#				print "$k: $device->{$k}\n";	
+#			}
+#			
+#		}
+#	}
 	my @perf_data = ("Performance: ");
 	my $perf_data_ref = \@perf_data;
 	
@@ -398,8 +424,8 @@ MAIN: {
 			}
 		}
 	}
-	use Data::Dumper;
-	print Dumper(\@perf_data);
-		
+	#use Data::Dumper;
+	#print Dumper(\@perf_data);
+	print "OK|gpu_temp=$DEVICE_LIST[0]->{nvmlGpuTemperature};\@80:90;\@90:100";
 	exit(0);	
 }
