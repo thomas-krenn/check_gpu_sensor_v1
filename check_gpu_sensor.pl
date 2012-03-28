@@ -10,10 +10,14 @@ use Getopt::Long;
 our $VERBOSITY = 0; #The current verbosity level
 our $LASTERRORSTRING = ''; #Error messages of functions
 our @DEVICE_LIST = (); #Array of GPUs in current system
+# TODO Switch to hash and array as perf data cannot be assigned to a specific GPU
+our @PERF_DATA = (); #Array of perf-data per GPU
+#hash key we don't want to have in PERF_DATA
 our %EXCLUDE_LIST = (
 	deviceHandle => '1',
 	deviceID => '1',
-	nvmlDevicePciInfo => '1'
+	nvmlDevicePciInfo => '1',
+	nvmlDeviceComputeMode => '1'
 );
 
 ###############################################
@@ -105,26 +109,31 @@ sub print_hash_values{
 sub check_hash_for_perf{
 	my $hash_ref = shift;
 	my $perf_data_ref = shift;
+	my @sensor_list = @{(shift)};
 	my %hash = %$hash_ref;
-	
+		
 	if(exists $hash{'Error'}){
 		print "Status: ".$hash{'Error'}."\n";
 		return;
 	}	
-	foreach my $k (keys %hash) {
+	foreach my $k (@sensor_list) {
+		#we don't want to print values present in exclude list
+		if(exists $EXCLUDE_LIST{$k}){
+			next;
+		}
 		if(ref($hash{$k}) eq "HASH"){
-			check_hash_for_perf($hash{$k},$perf_data_ref);
+			#the param sensor_list is switched to the hash keys
+			my @key_list = keys %{$hash{$k}};
+			$perf_data_ref = check_hash_for_perf($hash{$k},$perf_data_ref,\@key_list);
 		}
 		elsif(ref($hash{$k}) eq "SCALAR"){
 			#found a ref to a numeric value
 			#deref it and push it to hash
-			push(@$perf_data_ref,"$k:${$hash{$k}}");
+			push(@$perf_data_ref,"$k=${$hash{$k}}");
 		}
-		else{
-			if ($hash{$k} =~ /^[+-]?\d+$/ ){
+		elsif ($hash{$k} =~ /^[-+]?[0-9]*\.?[0-9]+$/ ){
 				#found a numeric value, push it to the given hash reference
-				push(@$perf_data_ref,"$k:$hash{$k},");
-			}
+				push(@$perf_data_ref,"$k=$hash{$k}");
 		}
 	}
 	return $perf_data_ref;
@@ -250,6 +259,23 @@ sub get_device_power{
 	
 	return \%power_hash;
 }
+sub get_device_memory{
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
+	my $memory_hash;
+	my $used_memory = -1;
+	my ($return,$value);
+	
+	($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
+	$memory_hash = (handle_error($return,$value));
+	if($memory_hash eq "N/A"){
+		$used_memory = "N/A";
+	}
+	else{
+		$used_memory = 100 * ($memory_hash->{'used'}) / ($memory_hash->{'total'});
+	}
+	return $used_memory;	
+}
 sub get_device_status{
 	my $current_ref = shift;
 	my %current_device = %$current_ref;
@@ -267,8 +293,8 @@ sub get_device_status{
 	($return,$value) = nvmlDeviceGetTemperature($current_device{'deviceHandle'},$NVML_TEMPERATURE_GPU);
 	$current_device{'nvmlGpuTemperature'} = (handle_error($return,$value));
 	
-	($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
-	$current_device{'nvmlMemoryInfo'} = (handle_error($return,$value));
+#	($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
+#	$current_device{'nvmlMemoryInfo'} = (handle_error($return,$value));
 	
 	($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
 	$current_device{'nvmlDevicePciInfo'} = (handle_error($return,$value));
@@ -287,9 +313,16 @@ sub get_device_status{
 	
 	$return = get_device_power($current_ref);	
 	$current_device{'nvmlDevicePowerInfos'} = $return;
+	
+	$return = get_device_memory($current_ref);
+	$current_device{'nvmlUsedMemory'} = $return;
 			
 	return \%current_device;
 }
+###############################################
+# Overall device functions 
+# They collect functions for all devices in the current system
+###############################################
 sub get_device_stati{
 	my $count = get_device_count();
 	if($count eq "NOK"){
@@ -316,6 +349,30 @@ sub get_device_stati{
 		push(@DEVICE_LIST,$gpu_ref);	
 	}	
 }
+
+#parses the device hashes and collects the perf data (only numeric values)
+#into arrays
+sub collect_perf_data{
+	
+	my $sensor_list_ref = shift;
+	my @sensor_list = ();
+		
+	foreach my $device (@DEVICE_LIST){
+		#fetch the desired sensors
+		if(@$sensor_list_ref){
+			@sensor_list = split(/,/, join(',', @$sensor_list_ref));
+		}
+		else{
+			#if no sensor is given via -T, we dump all
+			@sensor_list = keys %$device;
+		}
+		my @dev_perf_data = ();
+		my $dev_data_ref = \@dev_perf_data;
+		$dev_data_ref = check_hash_for_perf($device,$dev_data_ref,\@sensor_list);
+		push(@PERF_DATA,@dev_perf_data);#push device perf data to system array
+	}	
+}
+
 MAIN: {
 	my ($verbosity,$nvml_host,$config_file,) = '';
 	my @sensor_list = ();
@@ -370,6 +427,11 @@ MAIN: {
 	
 	#Collect the informations about the devices in the system
 	get_device_stati();
+	collect_perf_data(\@sensor_list);
+	print "OK|$DEVICE_LIST[0]->{nvmlGpuTemperature};80;100; $DEVICE_LIST[0]->{nvmlDeviceFanSpeed};60;80;";
+	
+	##########################
+#	#only for debug
 #	print "Debug: Device list\n";
 #	foreach my $device (@DEVICE_LIST){
 #		foreach my $k (keys %$device) {
@@ -389,43 +451,8 @@ MAIN: {
 #			
 #		}
 #	}
-	my @perf_data = ("Performance: ");
-	my $perf_data_ref = \@perf_data;
-	
-	#fetch the desired sensors
-	if(!@sensor_list){
-		@sensor_list = split(/,/, join(',', @sensor_list));
-	}
-		
-	#Check for performance values
-	foreach my $device (@DEVICE_LIST){
-		foreach my $k (keys %$device) {
-			#we don't want to print values present in exclude list
-			if(exists $EXCLUDE_LIST{$k}){
-				next;
-			}
-			#if a sensor list is given we only print these ones
-			if(@sensor_list && (grep(/$k/,@sensor_list)== 0)){
-				next;
-			}
-			#if the current key points to a hash reference, check
-			#it for performance values	
-			if(ref($device->{$k}) eq "HASH"){
-				$perf_data_ref = check_hash_for_perf($device->{$k},$perf_data_ref);
-			}
-			elsif(ref($device->{$k}) eq "SCALAR"){
-				push(@$perf_data_ref,"$k:${$device->{$k}},");
-			}
-			else{
-				#check if it is a number
-				if ($device->{$k} =~ /^[+-]?\d+$/ ){
-					push(@$perf_data_ref,"$k:$device->{$k},");
-				}
-			}
-		}
-	}
-	#use Data::Dumper;
-	#print Dumper(\@perf_data);
-	print "OK|gpu_temp=$DEVICE_LIST[0]->{nvmlGpuTemperature};\@80:90;\@90:100";
+#	use Data::Dumper;
+#	print Dumper(@PERF_DATA);
+####################### Debug end
 	exit(0);	
 }
