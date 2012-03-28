@@ -20,6 +20,7 @@ our %EXCLUDE_LIST = (
 	nvmlDeviceComputeMode => '1'
 );
 
+
 ###############################################
 # Plugin specific functions
 # They return help messages and version information
@@ -129,11 +130,11 @@ sub check_hash_for_perf{
 		elsif(ref($hash{$k}) eq "SCALAR"){
 			#found a ref to a numeric value
 			#deref it and push it to hash
-			push(@$perf_data_ref,"$k=${$hash{$k}}");
+			$perf_data_ref->{$k} = ${$hash{$k}};
 		}
 		elsif ($hash{$k} =~ /^[-+]?[0-9]*\.?[0-9]+$/ ){
 				#found a numeric value, push it to the given hash reference
-				push(@$perf_data_ref,"$k=$hash{$k}");
+				$perf_data_ref->{$k} = $hash{$k};
 		}
 	}
 	return $perf_data_ref;
@@ -292,10 +293,7 @@ sub get_device_status{
 	
 	($return,$value) = nvmlDeviceGetTemperature($current_device{'deviceHandle'},$NVML_TEMPERATURE_GPU);
 	$current_device{'nvmlGpuTemperature'} = (handle_error($return,$value));
-	
-#	($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
-#	$current_device{'nvmlMemoryInfo'} = (handle_error($return,$value));
-	
+		
 	($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
 	$current_device{'nvmlDevicePciInfo'} = (handle_error($return,$value));
 	
@@ -323,7 +321,7 @@ sub get_device_status{
 # Overall device functions 
 # They collect functions for all devices in the current system
 ###############################################
-sub get_device_stati{
+sub get_all_device_status{
 	my $count = get_device_count();
 	if($count eq "NOK"){
 		print "Error: ".$LASTERRORSTRING.".\n";
@@ -366,13 +364,16 @@ sub collect_perf_data{
 			#if no sensor is given via -T, we dump all
 			@sensor_list = keys %$device;
 		}
-		my @dev_perf_data = ();
-		my $dev_data_ref = \@dev_perf_data;
+		my %dev_perf_data = ();
+		my $dev_data_ref = \%dev_perf_data;
 		$dev_data_ref = check_hash_for_perf($device,$dev_data_ref,\@sensor_list);
-		push(@PERF_DATA,@dev_perf_data);#push device perf data to system array
+		push(@PERF_DATA,%dev_perf_data);#push device perf data to system array
 	}	
 }
-
+###############################################
+# Main function
+# Command line processing and device status collection
+###############################################
 MAIN: {
 	my ($verbosity,$nvml_host,$config_file,) = '';
 	my @sensor_list = ();
@@ -426,9 +427,9 @@ MAIN: {
 	}
 	
 	#Collect the informations about the devices in the system
-	get_device_stati();
+	get_all_device_status();
 	collect_perf_data(\@sensor_list);
-	print "OK|$DEVICE_LIST[0]->{nvmlGpuTemperature};80;100; $DEVICE_LIST[0]->{nvmlDeviceFanSpeed};60;80;";
+	print "OK|nvmlUsedMemory=$DEVICE_LIST[0]->{nvmlUsedMemory};60;80\n";
 	
 	##########################
 #	#only for debug
@@ -451,8 +452,8 @@ MAIN: {
 #			
 #		}
 #	}
-#	use Data::Dumper;
-#	print Dumper(@PERF_DATA);
+	use Data::Dumper;
+	print Dumper(@PERF_DATA);
 ####################### Debug end
 	exit(0);	
 }
