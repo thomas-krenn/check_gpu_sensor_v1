@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use nvidia::ml qw(:all);
 use Getopt::Long;
+use Switch;
 
 ###############################################
 # Global Variables in the current scope
@@ -19,7 +20,11 @@ our %EXCLUDE_LIST = (
 	nvmlDevicePciInfo => '1',
 	nvmlDeviceComputeMode => '1'
 );
-
+our %PERF_THRESHOLDS = (
+	nvmlGpuTemperature => ['90','100'], #Temperature
+	nvmlUsedMemory => ['95','99'], #Memory utilizaion
+	nvmlDeviceFanSpeed => ['80','95'] #Fan speed
+);
 
 ###############################################
 # Plugin specific functions
@@ -367,8 +372,66 @@ sub collect_perf_data{
 		my %dev_perf_data = ();
 		my $dev_data_ref = \%dev_perf_data;
 		$dev_data_ref = check_hash_for_perf($device,$dev_data_ref,\@sensor_list);
-		push(@PERF_DATA,%dev_perf_data);#push device perf data to system array
+		push(@PERF_DATA,$dev_data_ref);#push device perf data to system array
 	}	
+}
+#checks if the given performance data is in its rangens
+sub check_perf_threshold{
+	
+	my @warn_list = @{(shift)};
+	my @crit_list = @{(shift)};
+	my @status_level = ("OK");
+	my @warn_level = ();#warning sensors
+	my @crit_level = ();#crit sensors
+	
+	my $i = 0;
+	if(@warn_list){
+		@warn_list = split(/,/, join(',', @warn_list));
+		for ($i = 0; $i < @warn_list; $i++){
+			#everything, except that values that sould stay default, become the new values
+			#e.g. -w d,15,60 changes the warning level for sensor 2 and 3 but not for 1
+			if($warn_list[$i] ne 'd'){
+				switch($i){
+					case 0 {$PERF_THRESHOLDS{'nvmlGpuTemperature'}[0] = $warn_list[$i]};
+					case 1 {$PERF_THRESHOLDS{'nvmlUsedMemory'}[0] = $warn_list[$i]};
+					case 2 {$PERF_THRESHOLDS{'nvmlDeviceFanSpeed'}[0] = $warn_list[$i]};
+				}					
+			}		
+		}			
+	}
+	if(@crit_list){
+		@crit_list = split(/,/, join(',', @crit_list));
+		for ($i = 0; $i < @crit_list; $i++){
+			if($crit_list[$i] ne 'd'){
+				switch($i){
+					case 0 {$PERF_THRESHOLDS{'nvmlGpuTemperature'}[1] = $crit_list[$i]};
+					case 1 {$PERF_THRESHOLDS{'nvmlUsedMemory'}[1] = $crit_list[$i]};
+					case 2 {$PERF_THRESHOLDS{'nvmlDeviceFanSpeed'}[1] = $crit_list[$i]};
+				}
+			}		
+		}			
+	}
+	#TODO Change this to multiple devices, only the first one is used for now
+	my $perf_hash = $PERF_DATA[0];
+	foreach my $k (keys %$perf_hash){
+		if(exists $PERF_THRESHOLDS{$k}){
+			#warning level
+			if($perf_hash->{$k} >= $PERF_THRESHOLDS{$k}[0]){
+				$status_level[0] = "Warning";
+				push(@warn_level,$k);
+			}
+			#critival level
+			if($perf_hash->{$k} >= $PERF_THRESHOLDS{$k}[1]){
+				$status_level[0] = "Critical";
+				pop(@warn_level);#as it is critical, remove it from warning
+				push(@crit_level,$k);
+			}
+		}		
+	}
+	push(@status_level,\@warn_level);
+	push(@status_level,\@crit_level);
+	
+	return \@status_level;	
 }
 ###############################################
 # Main function
@@ -376,7 +439,9 @@ sub collect_perf_data{
 ###############################################
 MAIN: {
 	my ($verbosity,$nvml_host,$config_file,) = '';
-	my @sensor_list = ();
+	my @sensor_list = ();#query a specific sensor
+	my @warn_threshold = ();#change thresholds for performance data
+	my @crit_threshold = ();
 	
 	#Check for nvml installation
 	my $result = '';
@@ -411,6 +476,8 @@ MAIN: {
 		},
 		'f|config-file=s' => \$config_file,
 		'T|sensors=s' => \@sensor_list,
+		'w|warning=s' => \@warn_threshold,
+		'c|critical=s' => \@crit_threshold,
 	))){
 		print get_usage()."\n";
 		exit(1);
@@ -429,7 +496,28 @@ MAIN: {
 	#Collect the informations about the devices in the system
 	get_all_device_status();
 	collect_perf_data(\@sensor_list);
-	print "OK|nvmlUsedMemory=$DEVICE_LIST[0]->{nvmlUsedMemory};60;80\n";
+	my $status_level;
+	$status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
+	my $curr_sensors = $status_level->[2];
+	print $status_level->[0].": ";
+	if(@$curr_sensors){
+		foreach my $sensor (@$curr_sensors){
+			print $sensor."=".$PERF_DATA[0]->{$sensor};
+		}
+	}
+	$curr_sensors = $status_level->[1];
+	if(@$curr_sensors){
+		foreach my $sensor (@$curr_sensors){
+			print $sensor."=".$PERF_DATA[0]->{$sensor};
+		}
+	}
+			
+	
+	#print $status_level->[1]->[0];
+	#print status_level->[2];	
+	
+#	$PERF_DATA[0]->{$status_level->[1]}\n";
+#	print "OK|nvmlUsedMemory=$DEVICE_LIST[0]->{nvmlUsedMemory};60;80\n";
 	
 	##########################
 #	#only for debug
@@ -454,6 +542,10 @@ MAIN: {
 #	}
 	use Data::Dumper;
 	print Dumper(@PERF_DATA);
+	print "\n";
+	print Dumper(%PERF_THRESHOLDS);
+	print "\n";
+	print Dumper (@$status_level);
 ####################### Debug end
 	exit(0);	
 }
