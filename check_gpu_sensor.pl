@@ -139,7 +139,7 @@ sub check_hash_for_perf{
 		}
 		elsif ($hash{$k} =~ /^[-+]?[0-9]*\.?[0-9]+$/ ){
 				#found a numeric value, push it to the given hash reference
-				$perf_data_ref->{$k} = $hash{$k};
+				$perf_data_ref->{$k} = sprintf("%.2f", $hash{$k});
 		}
 	}
 	return $perf_data_ref;
@@ -499,7 +499,7 @@ MAIN: {
 	my $status_level;
 	$status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
 	my $curr_sensors = $status_level->[2];
-	print $status_level->[0].": ";
+	print $status_level->[0]." - ";
 	if(@$curr_sensors){
 		foreach my $sensor (@$curr_sensors){
 			print $sensor."=".$PERF_DATA[0]->{$sensor};
@@ -511,7 +511,11 @@ MAIN: {
 			print $sensor."=".$PERF_DATA[0]->{$sensor};
 		}
 	}
-			
+	print "|";
+	my $perf_hash = $PERF_DATA[0];
+	foreach my $k (keys %$perf_hash){
+		print $k."=".$perf_hash->{$k};
+	}		
 	
 	#print $status_level->[1]->[0];
 	#print status_level->[2];	
@@ -540,12 +544,12 @@ MAIN: {
 #			
 #		}
 #	}
-	use Data::Dumper;
-	print Dumper(@PERF_DATA);
-	print "\n";
-	print Dumper(%PERF_THRESHOLDS);
-	print "\n";
-	print Dumper (@$status_level);
+#	use Data::Dumper;
+#	print Dumper(@PERF_DATA);
+#	print "\n";
+#	print Dumper(%PERF_THRESHOLDS);
+#	print "\n";
+#	print Dumper (@$status_level);
 ####################### Debug end
 	exit(0);	
 }
