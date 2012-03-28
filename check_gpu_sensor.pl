@@ -8,6 +8,7 @@ use Switch;
 ###############################################
 # Global Variables in the current scope
 ###############################################
+our $EXIT_CODE = 0; #Exit value of plugin
 our $VERBOSITY = 0; #The current verbosity level
 our $LASTERRORSTRING = ''; #Error messages of functions
 our @DEVICE_LIST = (); #Array of GPUs in current system
@@ -498,6 +499,13 @@ MAIN: {
 	collect_perf_data(\@sensor_list);
 	my $status_level;
 	$status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
+	#check return values of threshold function
+	if($status_level->[0] eq "Critcal"){
+		$EXIT_CODE = 2;#Critical
+	}
+	if($status_level->[0] eq "Warning"){
+		$EXIT_CODE = 1;#Warning
+	}
 	my $curr_sensors = $status_level->[2];
 	print $status_level->[0]." - ";
 	if(@$curr_sensors){
@@ -551,5 +559,5 @@ MAIN: {
 #	print "\n";
 #	print Dumper (@$status_level);
 ####################### Debug end
-	exit(0);	
+	exit($EXIT_CODE);	
 }
