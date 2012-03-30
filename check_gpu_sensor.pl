@@ -46,8 +46,8 @@ Your system is using nvidia driver version: ".get_driver_version();
 }
 sub get_usage{
 	return "Usage:
-check_gpu_sensor | [-T <sensor type>] [-w <list of crit levels>] [-v] [-vv] [-vvv]
-  [-h] [-V]"
+check_gpu_sensor | [-T <sensor type>] [-w <list of warn levels>]
+[-c <list of crit levels>] [-v|1|2|3] [-h] [-V]"
 }
 sub check_nvml_setup{
 	#TODO Check for location of nvml library
@@ -64,6 +64,7 @@ sub check_nvml_setup{
 ###############################################
 # Helper functions 
 # They check for errors and print several structs
+# They also generate status outputs and verbose information
 ###############################################
 
 # Checking for errors returned by the nvml library
@@ -113,7 +114,8 @@ sub print_hash_values{
 		}
 	}
 }
-
+#Form a status string with warning, crit sensor values
+#or performance data followed by their thresholds
 sub get_status_string{
 	my $level = shift;
 	my $curr_sensors = shift;
@@ -130,6 +132,7 @@ sub get_status_string{
 		$curr_sensors = $curr_sensors->[1];
 	}
 	my $i = 1;
+	#Collect performance data of warn and crit sensors
 	if($level eq "Warning" || $level eq "Critical"){
 		if(@$curr_sensors){
 			foreach my $sensor (@$curr_sensors){
@@ -141,6 +144,7 @@ sub get_status_string{
 			}
 		}
 	}
+	#Collect performance values folled by thresholds
 	if($level eq "Performance"){
 		foreach my $k (keys %$curr_sensors){
 			$status_string .= $k."=".$curr_sensors->{$k};
@@ -155,6 +159,17 @@ sub get_status_string{
 			$i++;
 		}	
 	}
+	return $status_string;
+}
+sub get_verbose_string{
+	my $verbosity = shift;
+	my $device = shift;
+	my $status_string = "";
+
+	if($verbosity == 1){
+		$status_string .= "Driver Version: ".get_driver_version();
+	}
+
 	return $status_string;
 }
 
@@ -516,12 +531,11 @@ MAIN: {
 				print get_help();
 				exit(0);
 		},
-		'v|verbosity=i'	=>	\$verbosity,		
 		'V|version'	=>
 		sub{print get_version()."\n";
 				exit(0);
 		},
-		'f|config-file=s' => \$config_file,
+		'v|verbosity=i'	=>	\$verbosity,
 		'T|sensors=s' => \@sensor_list,
 		'w|warning=s' => \@warn_threshold,
 		'c|critical=s' => \@crit_threshold,
@@ -559,6 +573,10 @@ MAIN: {
 	print "|";
 	print get_status_string("Performance",$PERF_DATA[0]);
 	
+	print get_verbose_string($verbosity,$DEVICE_LIST[0]);
+
+
+
 	##########################
 #	#only for debug
 #	print "Debug: Device list\n";
