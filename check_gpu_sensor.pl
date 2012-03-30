@@ -14,13 +14,16 @@ our $LASTERRORSTRING = ''; #Error messages of functions
 our @DEVICE_LIST = (); #Array of GPUs in current system
 # TODO Switch to hash and array as perf data cannot be assigned to a specific GPU
 our @PERF_DATA = (); #Array of perf-data per GPU
-#hash key we don't want to have in PERF_DATA
+
+#hash keys we don't want to have in PERF_DATA
 our %EXCLUDE_LIST = (
 	deviceHandle => '1',
 	deviceID => '1',
 	nvmlDevicePciInfo => '1',
 	nvmlDeviceComputeMode => '1'
 );
+
+#thresholds for warning and critival levels
 our %PERF_THRESHOLDS = (
 	nvmlGpuTemperature => ['90','100'], #Temperature
 	nvmlUsedMemory => ['95','99'], #Memory utilizaion
@@ -36,15 +39,14 @@ sub get_version{
 		print "Error while fetching nvidia driver version: $LASTERRORSTRING\n";
 		exit(3);		
 	}
-	return "check_nvml_gpu version 0.0 alpha 2011-11-12
+	return "check_gpu_sensor version 0.0 alpha march 2012
 Copyright (C) 2011 Thomas-Krenn.AG (written by Georg Schönberger)
-Current update available at http://www.thomas-krenn.com/en/oss/nvml-plugin.
+Current updates available via git repository git.thomas-krenn.com/check_gpu_sensor.
 Your system is using nvidia driver version: ".get_driver_version();
 }
 sub get_usage{
 	return "Usage:
-check_nvml_gpu -H <hostname>
-  [-f <NVML config file> | [-b] [-T <sensor type>] [-x <sensor id>] [-v 1|2|3]
+check_gpu_sensor | [-T <sensor type>] [-w <list of crit levels>] [-v] [-vv] [-vvv]
   [-h] [-V]"
 }
 sub check_nvml_setup{
@@ -110,6 +112,50 @@ sub print_hash_values{
 			print "\t$k: $hash{$k}\n";
 		}
 	}
+}
+
+sub get_status_string{
+	my $level = shift;
+	my $curr_sensors = shift;
+	my $status_string = "";
+
+	if($level ne "Warning" && $level ne "Critical"
+		&& $level ne "Performance"){
+		return;
+	}
+	if($level eq "Warning"){
+		$curr_sensors = $curr_sensors->[2];
+	}
+	if($level eq "Critical"){
+		$curr_sensors = $curr_sensors->[1];
+	}
+	my $i = 1;
+	if($level eq "Warning" || $level eq "Critical"){
+		if(@$curr_sensors){
+			foreach my $sensor (@$curr_sensors){
+				$status_string .= $sensor."=".$PERF_DATA[0]->{$sensor};
+				if($i != @$curr_sensors){
+					$status_string .= " ";#print a space except at the end
+				}
+				$i++;
+			}
+		}
+	}
+	if($level eq "Performance"){
+		foreach my $k (keys %$curr_sensors){
+			$status_string .= $k."=".$curr_sensors->{$k};
+			#print warn and crit thresholds
+			if(exists $PERF_THRESHOLDS{$k}){
+				$status_string .= ";".$PERF_THRESHOLDS{$k}[0];
+				$status_string .= ";".$PERF_THRESHOLDS{$k}[1].";";
+			}
+			if($i != (keys %$curr_sensors)){
+				$status_string .= " ";
+			}
+			$i++;
+		}	
+	}
+	return $status_string;
 }
 
 #Check a hash for performance data
@@ -389,7 +435,7 @@ sub check_perf_threshold{
 	if(@warn_list){
 		@warn_list = split(/,/, join(',', @warn_list));
 		for ($i = 0; $i < @warn_list; $i++){
-			#everything, except that values that sould stay default, become the new values
+			#everything, except that values that sould stay default, get new values
 			#e.g. -w d,15,60 changes the warning level for sensor 2 and 3 but not for 1
 			if($warn_list[$i] ne 'd'){
 				switch($i){
@@ -506,30 +552,12 @@ MAIN: {
 	if($status_level->[0] eq "Warning"){
 		$EXIT_CODE = 1;#Warning
 	}
-	my $curr_sensors = $status_level->[2];
-	print $status_level->[0]." - ";
-	if(@$curr_sensors){
-		foreach my $sensor (@$curr_sensors){
-			print $sensor."=".$PERF_DATA[0]->{$sensor};
-		}
-	}
-	$curr_sensors = $status_level->[1];
-	if(@$curr_sensors){
-		foreach my $sensor (@$curr_sensors){
-			print $sensor."=".$PERF_DATA[0]->{$sensor};
-		}
-	}
+
+	print $status_level->[0]." - ".$DEVICE_LIST[0]->{'productName'}." ";
+	print get_status_string("Critical",$status_level);
+	print get_status_string("Warning",$status_level);
 	print "|";
-	my $perf_hash = $PERF_DATA[0];
-	foreach my $k (keys %$perf_hash){
-		print $k."=".$perf_hash->{$k};
-	}		
-	
-	#print $status_level->[1]->[0];
-	#print status_level->[2];	
-	
-#	$PERF_DATA[0]->{$status_level->[1]}\n";
-#	print "OK|nvmlUsedMemory=$DEVICE_LIST[0]->{nvmlUsedMemory};60;80\n";
+	print get_status_string("Performance",$PERF_DATA[0]);
 	
 	##########################
 #	#only for debug
@@ -552,12 +580,6 @@ MAIN: {
 #			
 #		}
 #	}
-#	use Data::Dumper;
-#	print Dumper(@PERF_DATA);
-#	print "\n";
-#	print Dumper(%PERF_THRESHOLDS);
-#	print "\n";
-#	print Dumper (@$status_level);
 ####################### Debug end
 	exit($EXIT_CODE);	
 }
