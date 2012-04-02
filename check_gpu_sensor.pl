@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use nvidia::ml qw(:all);
-use Getopt::Long;
+use Getopt::Long qw(:config no_ignore_case);#case sensitive
 use Switch;
 
 ###############################################
