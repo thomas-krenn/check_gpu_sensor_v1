@@ -9,7 +9,6 @@ use Switch;
 # Global Variables in the current scope
 ###############################################
 our $EXIT_CODE = 0; #Exit value of plugin
-our $VERBOSITY = 0; #The current verbosity level
 our $LASTERRORSTRING = ''; #Error messages of functions
 our @DEVICE_LIST = (); #Array of GPUs in current system
 # TODO Switch to hash and array as perf data cannot be assigned to a specific GPU
@@ -25,7 +24,7 @@ our %EXCLUDE_LIST = (
 
 #thresholds for warning and critival levels
 our %PERF_THRESHOLDS = (
-	nvmlGpuTemperature => ['90','100'], #Temperature
+	nvmlGpuTemperature => ['30','40'], #Temperature
 	nvmlUsedMemory => ['95','99'], #Memory utilizaion
 	nvmlDeviceFanSpeed => ['80','95'] #Fan speed
 );
@@ -119,6 +118,7 @@ sub print_hash_values{
 sub get_status_string{
 	my $level = shift;
 	my $curr_sensors = shift;
+	my $verbosity = shift;
 	my $status_string = "";
 
 	if($level ne "Warning" && $level ne "Critical"
@@ -126,17 +126,21 @@ sub get_status_string{
 		return;
 	}
 	if($level eq "Warning"){
-		$curr_sensors = $curr_sensors->[2];
+		$curr_sensors = $curr_sensors->[1];
 	}
 	if($level eq "Critical"){
-		$curr_sensors = $curr_sensors->[1];
+		$curr_sensors = $curr_sensors->[2];
 	}
 	my $i = 1;
 	#Collect performance data of warn and crit sensors
 	if($level eq "Warning" || $level eq "Critical"){
 		if(@$curr_sensors){
 			foreach my $sensor (@$curr_sensors){
-				$status_string .= $sensor."=".$PERF_DATA[0]->{$sensor};
+				$status_string .= "[".$sensor." = ".$level;
+				if($verbosity){
+					$status_string .= " (".$PERF_DATA[0]->{$sensor}.")";	
+				}
+				$status_string .= "]";
 				if($i != @$curr_sensors){
 					$status_string .= " ";#print a space except at the end
 				}
@@ -144,7 +148,7 @@ sub get_status_string{
 			}
 		}
 	}
-	#Collect performance values folled by thresholds
+	#Collect performance values followed by thresholds
 	if($level eq "Performance"){
 		foreach my $k (keys %$curr_sensors){
 			$status_string .= $k."=".$curr_sensors->{$k};
@@ -166,10 +170,20 @@ sub get_verbose_string{
 	my $device = shift;
 	my $status_string = "";
 
-	if($verbosity == 1){
+	if($verbosity == 3){
+		$status_string .= "------------- begin of debug output (-v 3 is set): ------------";
 		$status_string .= "Driver Version: ".get_driver_version();
 	}
 
+	if($verbosity == 2){
+		print
+			
+		
+	}
+
+	if($verbosity == 3){
+		$status_string .= "------------- end of debug output ------------";
+	}
 	return $status_string;
 }
 
@@ -190,7 +204,7 @@ sub check_hash_for_perf{
 			next;
 		}
 		if(ref($hash{$k}) eq "HASH"){
-			#the param sensor_list is switched to the hash keys
+			#the param sensor_list is switched to the hash keys for the next call of check_hash
 			my @key_list = keys %{$hash{$k}};
 			$perf_data_ref = check_hash_for_perf($hash{$k},$perf_data_ref,\@key_list);
 		}
@@ -500,10 +514,11 @@ sub check_perf_threshold{
 # Command line processing and device status collection
 ###############################################
 MAIN: {
-	my ($verbosity,$nvml_host,$config_file,) = '';
+	my ($nvml_host,$config_file,$show_na) = '';
 	my @sensor_list = ();#query a specific sensor
 	my @warn_threshold = ();#change thresholds for performance data
 	my @crit_threshold = ();
+	my $verbosity = 0;
 	
 	#Check for nvml installation
 	my $result = '';
@@ -539,6 +554,7 @@ MAIN: {
 		'T|sensors=s' => \@sensor_list,
 		'w|warning=s' => \@warn_threshold,
 		'c|critical=s' => \@crit_threshold,
+		'show-na'	=> \$show_na,
 	))){
 		print get_usage()."\n";
 		exit(1);
@@ -568,34 +584,41 @@ MAIN: {
 	}
 
 	print $status_level->[0]." - ".$DEVICE_LIST[0]->{'productName'}." ";
-	print get_status_string("Critical",$status_level);
-	print get_status_string("Warning",$status_level);
+	print get_status_string("Critical",$status_level,$verbosity);
+	print get_status_string("Warning",$status_level,$verbosity);
 	print "|";
 	print get_status_string("Performance",$PERF_DATA[0]);
 	
 	print get_verbose_string($verbosity,$DEVICE_LIST[0]);
 
-
+#	use Data::Dumper;
+#	print Data::Dumper->Dump($status_level);
 
 	##########################
 #	#only for debug
 #	print "Debug: Device list\n";
-#	foreach my $device (@DEVICE_LIST){
-#		foreach my $k (keys %$device) {
-#			if($k eq "deviceHandle"){
-#				next;#we don't want to print driver handles
+#	if($verbosity == 1){
+#		foreach my $device (@DEVICE_LIST){
+#			foreach my $k (keys %$device) {
+#				if($k eq "deviceHandle"){
+#					next;#we don't want to print driver handles
+#				}
+#				#only print N/A sensors if show all is given
+#				if(!(defined $show_na) && $device->{$k} eq "N/A"){
+#					next;
+#				}
+#				if(ref($device->{$k}) eq "HASH"){
+#					print "$k:\n";
+#					print_hash_values($device->{$k})
+#				}
+#				elsif(ref($device->{$k}) eq "SCALAR"){
+#					print "$k: $$device->{$k}\n";
+#				}
+#				else{
+#					print "$k: $device->{$k}\n";	
+#				}
+#				
 #			}
-#			if(ref($device->{$k}) eq "HASH"){
-#				print "$k:\n";
-#				print_hash_values($device->{$k})
-#			}
-#			elsif(ref($device->{$k}) eq "SCALAR"){
-#				print "$k: $$device->{$k}\n";
-#			}
-#			else{
-#				print "$k: $device->{$k}\n";	
-#			}
-#			
 #		}
 #	}
 ####################### Debug end
