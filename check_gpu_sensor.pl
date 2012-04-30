@@ -41,7 +41,8 @@ sub get_version{
 	return "check_gpu_sensor version 0.0 beta April 2012
 Copyright (C) 2011 Thomas-Krenn.AG (written by Georg Schönberger)
 Current updates available via git repository git.thomas-krenn.com.
-Your system is using nvidia driver version: ".get_driver_version();
+Your system is using NVIDIA driver version ".get_driver_version()." with
+NVML version ".get_nvml_version();
 }
 sub get_usage{
 	return "Usage:
@@ -324,9 +325,8 @@ sub check_hash_for_perf{
 # They are used to collect information about the current system
 ###############################################
 sub get_nvml_version{
-	#TODO Check if nvml version can be used? Currently not working with bindings under driver 280
-	my ($return, $version);
-	nvmlSystemGetNVMLVersion();
+	#Working since 3.295.41
+	my ($return, $version) = nvmlSystemGetNVMLVersion();
 	if($return == $NVML_SUCCESS){
 		return $version;
 	}
