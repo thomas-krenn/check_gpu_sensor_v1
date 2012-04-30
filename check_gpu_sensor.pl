@@ -96,22 +96,79 @@ sub handle_error{
 	}	
 }
 
-#Print the value of the status hash
-sub print_hash_values{
-	my %hash = %{$_[0]};
-	if(exists $hash{'Error'}){
-		print "Status: ".$hash{'Error'}."\n";
-		return;
-	}
-	foreach my $k (keys %hash) {
-		if(ref($hash{$k}) eq "HASH"){
-				print "$k:\n";
-				print_hash_values($hash{$k})
+sub print_hash{
+	my $hash_ref = shift;
+	my $show_na = shift;
+	my $string = "";
+	my $is_na = 1;
+	
+	foreach my $k (keys %{$hash_ref}) {
+		if($hash_ref->{$k} ne "N/A"){
+			$is_na = 0;
+		}
+		#only print N/A sensors if show all is given
+		if(!(defined $show_na) && $hash_ref->{$k} eq "N/A"){
+			next;
+		}
+		if(ref($hash_ref->{$k}) eq "SCALAR"){
+			$string .= "\t$k: $$hash_ref->{$k}\n";
 		}
 		else{
-			print "\t$k: $hash{$k}\n";
+			$string .= "\t$k: $hash_ref->{$k}\n";	
+		}		
+	}
+	#if all values are N/A, return this
+	if($is_na){
+		return "N/A";
+	}
+	else{
+		return $string;
+	}
+}
+
+#Print the value of the status hash
+sub get_hash_values{
+	my $hash_ref = shift;
+	my $show_na = shift;
+	my $string = "";
+	my $is_na = 1;
+	
+	if(exists $hash_ref->{'Error'}){
+		$string .= "Error: ".$hash_ref->{'Error'}."\n";
+		return $string;
+	}
+	foreach my $k (keys %{$hash_ref}) {
+		if($k eq "deviceHandle"){
+			next;#we don't want to print driver handles
+		}
+		#only print N/A sensors if show all is given
+		if(!(defined $show_na) && $hash_ref->{$k} eq "N/A"){
+			next;
+		}
+		#if we found a hash, call the print_hash function
+		#if all values of a hash are N/A, the hash itself gets
+		#the string N/A assigned
+		if(ref($hash_ref->{$k}) eq "HASH"){
+				my $hash_string = print_hash($hash_ref->{$k},$show_na);
+				if($hash_string eq "N/A"){
+					if(defined $show_na){
+						$string .= "-$k: $hash_string\n";
+					}
+				}
+				else{
+					$string .= "-$k\n";
+					$string .= $hash_string;
+				}
+		}
+		elsif(ref($hash_ref->{$k}) eq "SCALAR"){
+			$string .= "-$k: $$hash_ref->{$k}\n";
+		}
+		else{
+			$string .= "-$k: $hash_ref->{$k}\n";	
 		}
 	}
+	return $string;
+	
 }
 #Form a status string with warning, crit sensor values
 #or performance data followed by their thresholds
@@ -168,19 +225,16 @@ sub get_status_string{
 sub get_verbose_string{
 	my $verbosity = shift;
 	my $device = shift;
+	my $show_na = shift;
 	my $status_string = "";
-
+	
 	if($verbosity == 3){
 		$status_string .= "------------- begin of debug output (-v 3 is set): ------------";
 		$status_string .= "Driver Version: ".get_driver_version();
 	}
-
 	if($verbosity == 2){
-		print
-			
-		
+		$status_string .= get_hash_values($device,$show_na)
 	}
-
 	if($verbosity == 3){
 		$status_string .= "------------- end of debug output ------------";
 	}
@@ -588,39 +642,7 @@ MAIN: {
 	print get_status_string("Warning",$status_level,$verbosity);
 	print "|";
 	print get_status_string("Performance",$PERF_DATA[0]);
-	
-	print get_verbose_string($verbosity,$DEVICE_LIST[0]);
+	print "\n".get_verbose_string($verbosity,$DEVICE_LIST[0],$show_na);
 
-#	use Data::Dumper;
-#	print Data::Dumper->Dump($status_level);
-
-	##########################
-#	#only for debug
-#	print "Debug: Device list\n";
-#	if($verbosity == 1){
-#		foreach my $device (@DEVICE_LIST){
-#			foreach my $k (keys %$device) {
-#				if($k eq "deviceHandle"){
-#					next;#we don't want to print driver handles
-#				}
-#				#only print N/A sensors if show all is given
-#				if(!(defined $show_na) && $device->{$k} eq "N/A"){
-#					next;
-#				}
-#				if(ref($device->{$k}) eq "HASH"){
-#					print "$k:\n";
-#					print_hash_values($device->{$k})
-#				}
-#				elsif(ref($device->{$k}) eq "SCALAR"){
-#					print "$k: $$device->{$k}\n";
-#				}
-#				else{
-#					print "$k: $device->{$k}\n";	
-#				}
-#				
-#			}
-#		}
-#	}
-####################### Debug end
 	exit($EXIT_CODE);	
 }
