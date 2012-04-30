@@ -22,9 +22,9 @@ our %EXCLUDE_LIST = (
 	nvmlDeviceComputeMode => '1'
 );
 
-#thresholds for warning and critival levels
+#warning and critical threshold levels
 our %PERF_THRESHOLDS = (
-	nvmlGpuTemperature => ['30','40'], #Temperature
+	nvmlGpuTemperature => ['85','100'], #Temperature
 	nvmlUsedMemory => ['95','99'], #Memory utilizaion
 	nvmlDeviceFanSpeed => ['80','95'] #Fan speed
 );
@@ -38,16 +38,54 @@ sub get_version{
 		print "Error while fetching nvidia driver version: $LASTERRORSTRING\n";
 		exit(3);		
 	}
-	return "check_gpu_sensor version 0.0 alpha march 2012
+	return "check_gpu_sensor version 0.0 beta April 2012
 Copyright (C) 2011 Thomas-Krenn.AG (written by Georg Schönberger)
-Current updates available via git repository git.thomas-krenn.com/check_gpu_sensor.
+Current updates available via git repository git.thomas-krenn.com.
 Your system is using nvidia driver version: ".get_driver_version();
 }
 sub get_usage{
 	return "Usage:
 check_gpu_sensor | [-T <sensor type>] [-w <list of warn levels>]
-[-c <list of crit levels>] [-v|1|2|3] [-h] [-V]"
+[-c <list of crit levels>] [-v|1|2|3] [-h] [-V] [--show-na]"
 }
+sub get_help{
+	return "
+  [-T <sensor type>]
+       limit sensors to query based on NVML sensor types.
+       Examples for IPMI sensor type are 'nvmlGpuTemperature'
+  [-w <list of warning thresholds>]
+       Change the default warning levels. The order of the levels
+       is the following:
+       -nvmlGpuTemperature
+       -nvmlUsedMemory
+       -nvmlDeviceFanSpeed
+       Levels that should stay default have a 'd' assigned.
+       Example:
+           check_gpu_sensor.pl -w '75,d,d' 
+       This changes the warning level for the temperature.
+  [-c <list of critical thresholds>]
+       Change the default critical levels. The order of the levels
+       is the same as for the warning levels.
+       Levels that should stay default have a 'd' assigned.
+       Example:
+           check_gpu_sensor.pl -c '100,d,d' 
+       This changes the critical level for the temperature.  		
+  [-c <list of critical thresholds>]
+  [-v <Verbose Level>]
+       be verbose
+         (no -v) .. single line output
+         -v 1 ..... single line output with additional details for warnings
+         -v 2 ..... multi line output, also with additional details for warnings
+         -v 3 ..... normal output, then debugging output followed by normal multi line output
+  [-h]
+       show this help
+  [-V]
+       show version information
+  [--show-na]
+       show sensors with value equal to N/A (means not available)";
+}
+
+
 sub check_nvml_setup{
 	#TODO Check for location of nvml library
 	my $return = '';
@@ -229,14 +267,20 @@ sub get_verbose_string{
 	my $status_string = "";
 	
 	if($verbosity == 3){
-		$status_string .= "------------- begin of debug output (-v 3 is set): ------------";
-		$status_string .= "Driver Version: ".get_driver_version();
-	}
-	if($verbosity == 2){
-		$status_string .= get_hash_values($device,$show_na)
+		$status_string .= "------------- begin of debug output (-v 3 is set): ------------\n";
+		$status_string .= "Nvidia Driver Version: ".get_driver_version()."\n";
+		$status_string .= "Number of GPUs in system: ".@DEVICE_LIST."\n";
+		foreach my $g (@DEVICE_LIST){
+			$status_string .= "\t-".$g->{'productName'}."\n";
+		}
+		$status_string .= "----Called sensors (incl. N/A)----\n";
+		$status_string .= get_hash_values($device,1);
 	}
 	if($verbosity == 3){
-		$status_string .= "------------- end of debug output ------------";
+		$status_string .= "------------- end of debug output ------------\n";
+	}
+	if($verbosity == 2 || $verbosity == 3){
+		$status_string .= get_hash_values($device,$show_na)
 	}
 	return $status_string;
 }
@@ -597,7 +641,7 @@ MAIN: {
 				print  "\n";
 				print get_usage();
 				print "\n";
-				print get_help();
+				print get_help()."\n";
 				exit(0);
 		},
 		'V|version'	=>
@@ -626,6 +670,7 @@ MAIN: {
 	
 	#Collect the informations about the devices in the system
 	get_all_device_status();
+	#TODO Is the sensor list only for performance data valid?
 	collect_perf_data(\@sensor_list);
 	my $status_level;
 	$status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
@@ -636,7 +681,6 @@ MAIN: {
 	if($status_level->[0] eq "Warning"){
 		$EXIT_CODE = 1;#Warning
 	}
-
 	print $status_level->[0]." - ".$DEVICE_LIST[0]->{'productName'}." ";
 	print get_status_string("Critical",$status_level,$verbosity);
 	print get_status_string("Warning",$status_level,$verbosity);
