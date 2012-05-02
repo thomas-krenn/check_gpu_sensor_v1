@@ -134,7 +134,9 @@ sub handle_error{
 		}
 	}	
 }
-
+#Prints all values of a given hash
+#If every value of the hash is N/A, the string
+#N/A is returned
 sub print_hash{
 	my $hash_ref = shift;
 	my $show_na = shift;
@@ -164,10 +166,9 @@ sub print_hash{
 		return $string;
 	}
 }
-
 #Print the value of the status hash
 sub get_hash_values{
-	my $hash_ref = shift;
+	my $hash_ref = shift;#reference to device hash
 	my $show_na = shift;
 	my $string = "";
 	my $is_na = 1;
