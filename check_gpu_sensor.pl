@@ -38,8 +38,8 @@ sub get_version{
 		print "Error while fetching nvidia driver version: $LASTERRORSTRING\n";
 		exit(3);		
 	}
-	return "check_gpu_sensor version 0.0 beta April 2012
-Copyright (C) 2011 Thomas-Krenn.AG (written by Georg Schönberger)
+	return "check_gpu_sensor version 1.0 beta May 2012
+Copyright (C) 2011-2012 Thomas-Krenn.AG (written by Georg Schönberger)
 Current updates available via git repository git.thomas-krenn.com.
 Your system is using NVIDIA driver version ".get_driver_version()." with
 NVML version ".get_nvml_version();
@@ -47,37 +47,37 @@ NVML version ".get_nvml_version();
 sub get_usage{
 	return "Usage:
 check_gpu_sensor | [-T <sensor type>] [-w <list of warn levels>]
-[-c <list of crit levels>] [-v|1|2|3] [-h] [-V] [--show-na]"
+[-c <list of crit levels>] [-v|-vv|-vvv] [-h] [-V] [--show-na]"
 }
 sub get_help{
 	return "
   [-T <sensor type>]
        limit sensors to query based on NVML sensor types.
-       Examples for IPMI sensor type are 'nvmlGpuTemperature'
+       Examples for GPU sensor types are 'nvmlGpuTemperature',
+       'nvmlUsedMemory','nvmlDeviceFanSpeed'
   [-w <list of warning thresholds>]
        Change the default warning levels. The order of the levels
        is the following:
        -nvmlGpuTemperature
        -nvmlUsedMemory
        -nvmlDeviceFanSpeed
-       Levels that should stay default have a 'd' assigned.
+       Levels that should stay default get a 'd' assigned.
        Example:
            check_gpu_sensor.pl -w '75,d,d' 
        This changes the warning level for the temperature.
   [-c <list of critical thresholds>]
        Change the default critical levels. The order of the levels
        is the same as for the warning levels.
-       Levels that should stay default have a 'd' assigned.
+       Levels that should stay default get a 'd' assigned.
        Example:
            check_gpu_sensor.pl -c '100,d,d' 
        This changes the critical level for the temperature.  		
-  [-c <list of critical thresholds>]
   [-v <Verbose Level>]
        be verbose
          (no -v) .. single line output
-         -v 1 ..... single line output with additional details for warnings
-         -v 2 ..... multi line output, also with additional details for warnings
-         -v 3 ..... normal output, then debugging output followed by normal multi line output
+         -v ..... single line output with additional details for warnings
+         -vv ..... multi line output, also with additional details for warnings
+         -vvv ..... normal output, then debugging output, followed by normal multi line output
   [-h]
        show this help
   [-V]
@@ -271,7 +271,7 @@ sub get_verbose_string{
 	my $status_string = "";
 	
 	if($verbosity == 3){
-		$status_string .= "------------- begin of debug output (-v 3 is set): ------------\n";
+		$status_string .= "------------- begin of debug output (-vvv is set): ------------\n";
 		$status_string .= "Nvidia Driver Version: ".get_driver_version()."\n";
 		$status_string .= "Number of GPUs in system: ".@DEVICE_LIST."\n";
 		foreach my $g (@DEVICE_LIST){
@@ -619,7 +619,7 @@ sub check_perf_threshold{
 # Command line processing and device status collection
 ###############################################
 MAIN: {
-	my ($nvml_host,$config_file,$show_na) = '';
+	my ($nvml_host,$config_file,$show_na,$show_default) = '';
 	my @sensor_list = ();#query a specific sensor
 	my @warn_threshold = ();#change thresholds for performance data
 	my @crit_threshold = ();
@@ -655,7 +655,9 @@ MAIN: {
 		sub{print get_version()."\n";
 				exit(0);
 		},
-		'v|verbosity=i'	=>	\$verbosity,
+		'v|verbosity'	=>	\$verbosity,
+		'vv'			=> sub{$verbosity=2},
+		'vvv'			=> sub{$verbosity=3},
 		'T|sensors=s' => \@sensor_list,
 		'w|warning=s' => \@warn_threshold,
 		'c|critical=s' => \@crit_threshold,
