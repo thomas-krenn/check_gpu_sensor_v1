@@ -91,7 +91,9 @@ sub check_nvml_setup{
 	#TODO Check for location of nvml library
 	my $return = '';
 	if(!(-e "/usr/lib32/libnvidia-ml.so") &&
-		!(-e "/usr/lib32/nvidia-current/libnvidia-ml.so")){
+		!(-e "/usr/lib32/nvidia-current/libnvidia-ml.so") &&
+		!(-e "/usr/lib/nvidia-current/libnvidia-ml.so") &&
+		!(-e "/usr/lib/libnvidia-ml.so")){
 		$LASTERRORSTRING = "Nvml library not found on system";
 		return "NOK";
 	}
@@ -327,12 +329,16 @@ sub check_hash_for_perf{
 ###############################################
 sub get_nvml_version{
 	#Working since 3.295.41
-	my ($return, $version) = nvmlSystemGetNVMLVersion();
-	if($return == $NVML_SUCCESS){
-		return $version;
+	my $version = get_driver_version();
+	$version =~ /(\d+)\.(\d+)/;
+	if($1 >= 295){
+		my ($return, $version) = nvmlSystemGetNVMLVersion();
+		if($return == $NVML_SUCCESS){
+			return $version;
+		}
 	}
 	else{
-		return "NOK";
+		return "not yet supported";
 	}	
 }
 sub get_driver_version{
