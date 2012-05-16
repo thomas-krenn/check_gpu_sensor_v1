@@ -1,0 +1,50 @@
+
+                            check_gpu_sensor
+                            =================
+
+ check_gpu_sensor: Nagios/Icinga plugin to check GPU sensors vi NVML
+
+ Copyright (C) 2011-2012 Thomas-Krenn.AG,
+
+ This program is free software; you can redistribute it and/or modify it under
+ the terms of the GNU General Public License as published by the Free Software
+ Foundation; either version 3 of the License, or (at your option) any later
+ version.
+ 
+ This program is distributed in the hope that it will be useful, but WITHOUT
+ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ details.
+ 
+ You should have received a copy of the GNU General Public License along with
+ this program; if not, see <http://www.gnu.org/licenses/>.
+
+
+ Requirements:
+ -------------
+   o NVDIA display driver
+      *Currently the proprietary NVIDIA driver from the official website
+       (under Ubuntu 10.4, cf. http://www.thomas-krenn.com/de/wiki/CUDA_Installation)
+       as well as the driver from the repositories (with Ubuntu 11.10 and 12.04)
+       have been tested successfully.
+   o NVML perl bindings
+      *The bindigs are required to access the NVML library via Perl. Fetch
+       a copy of the bindings from CPAN (http://search.cpan.org/~nvbinding/).
+       For more information about the NVML library also visit
+       http://developer.nvidia.com/nvidia-management-library-nvml.
+   o Perl
+   o Required perl modules (should be installed per default under Ubuntu)
+     *strict
+     *warinings
+     *Getopt:Long
+     *Switch 
+   o Nagios or Icinga
+
+
+ Installation hints:
+ -------------------
+   On Ubuntu using the driver from the repositories the file "Makefile.PL" in the 
+   nvml package must be modified. Add the parameter '-L/usr/lib/nvidia-current'
+   to 'LIBS' in order to get rid of the warning:
+   Note (probably harmless): No library found for -lnvidia-ml
+   when calling 'perl Makefile.PL'.
