@@ -1,0 +1,32 @@
+################################################################################
+Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
+################################################################################
+
+Version 1.0 20120516
+  * The following features are implemented and tested successfully:
+     * GPU temperature
+     * GPU memory usage
+     * GPU device fan speed
+  * The following features are implemented BUT must be tested on suited hardware:
+     * Support for multi GPU systems
+     * GPU clock information
+     * Output from ROM versions
+     * ECC information
+     * Power Management Mode
+     * GPU Utilization Rates
+  * The output of performance data is tested with Icinga 1.6.1 on Debian Lenny
+  * Checking of a remote host via NRPE is tested with
+     * Nagios NRPE Plugin 2.12.4 on the Icinga host (Debian Lenny)
+     * Nagios NRPE Server 2.12-5 on an Ubuntu Remote host
+  * Various information about the GPU can be displayed
+     * Number of GPUs in the system
+     * Product Name
+     * Device PCI Information
+  * Information about driver setup
+     * NVIDIA driver version
+     * NVML version
+
+List of contributors to version 1.0:
+  Georg Schönberger, Thomas-Krenn.AG
+
+################################################################################
