@@ -2,6 +2,14 @@
 Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
 ################################################################################
 
+Version 1.1 20120620
+  * Switched to single GPU support as it is easy to define multiple
+    check_gpu_sensor plugin calls with different device IDs/PCI bus strings.
+  * A valid device ID or a PCI Bus ID is now required. The IDs specify the
+    gpu device to query, the safest way is via the PCI Bus ID as it is not
+    ensured that device IDs stay persistent across reboots. Get the IDs with 
+    the nvidia-smi tool of the nvidia driver.
+
 Version 1.0 20120516
   * The following features are implemented and tested successfully:
      * GPU temperature

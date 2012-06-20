@@ -42,6 +42,7 @@ our @PERF_DATA = (); #Array of perf-data per GPU
 our %EXCLUDE_LIST = (
 	deviceHandle => '1',
 	deviceID => '1',
+	devicePCIBusID => '1',
 	nvmlDevicePciInfo => '1',
 	nvmlDeviceComputeMode => '1'
 );
@@ -70,15 +71,30 @@ NVML version ".get_nvml_version();
 }
 sub get_usage{
 	return "Usage:
-check_gpu_sensor | [-T <sensor type>] [-w <list of warn levels>]
+check_gpu_sensor -db <pci bus string> | -d <device id> | [-T <sensor type>] [-w <list of warn levels>]
 [-c <list of crit levels>] [-v|-vv|-vvv] [-h] [-V] [--show-na]"
 }
 sub get_help{
 	return "
+
+  [-d <device id>]
+        Return information about the GPU with the given device ID. IDs
+        can be checked with the nvidia-smi tool. Attention: It is not
+        ensured that device IDs are persistent across reboots. The safest
+        way is to define a device bus string via '-db' which can be found out
+        with nvidia-smi.
+  [-db <pci bus string>]
+        Check the GPU with the corresponding pci bus device string. The pci bus
+        ID can be found out with:
+        nvidia-smi -a |grep 'Bus Id'.
+        An example string is '0000:01:00.0' that can be used to call the plugin:
+            ./check_gpu_sensor -db '0000:01:00.0'
   [-T <sensor type>]
        limit sensors to query based on NVML sensor types.
+       The sensors are currently only working for performance data sensors.
        Examples for GPU sensor types are 'nvmlGpuTemperature',
        'nvmlUsedMemory','nvmlDeviceFanSpeed'
+       
   [-w <list of warning thresholds>]
        Change the default warning levels. The order of the levels
        is the following:
@@ -532,6 +548,11 @@ sub get_device_status{
 # They collect functions for all devices in the current system
 ###############################################
 sub get_all_device_status{
+	my $device_id = shift;
+	my $device_bus = shift;
+	
+	my ($return, $handle);
+	
 	my $count = get_device_count();
 	if($count eq "NOK"){
 		print "Error: ".$LASTERRORSTRING.".\n";
@@ -541,21 +562,35 @@ sub get_all_device_status{
 		print "Error: No NVIDIA device found in current system.\n";
 		exit(3);
 	}
-	#for each device fetch a driver handle and call
-	#the function to get the device status informations
-	for (my $i = 0; $i < $count; $i++){
-		my %gpu_h;
-		my $gpu_ref = \%gpu_h;
-		$gpu_h{'deviceID'} = $i;		
-		my ($return, $handle) = nvmlDeviceGetHandleByIndex($gpu_h{'deviceID'});
+	if($device_bus ne ''){
+		($return, $handle) = nvmlDeviceGetHandleByPciBusId($device_bus);
 		if($return != $NVML_SUCCESS){
-			print "Error: Cannot get handle for device: ".nvmlErrorString($return)."\n";
-			next;
+			print "Error: Cannot get handle for device bus ID: ".nvmlErrorString($return)."\n";
+			return "NOK";
 		}
-		$gpu_h{'deviceHandle'} = $handle;			
-		$gpu_ref = get_device_status(\%gpu_h);
-		push(@DEVICE_LIST,$gpu_ref);	
-	}	
+	}
+	else{
+		if($device_id != -1){
+			($return, $handle) = nvmlDeviceGetHandleByIndex($device_id);
+			if($return != $NVML_SUCCESS){
+				print "Error: Cannot get handle for device: ".nvmlErrorString($return)."\n";
+				return "NOK";
+			}
+		}
+	}
+	my %gpu_h;
+	my $gpu_ref = \%gpu_h;
+
+	if($device_id != -1){
+		$gpu_h{'deviceID'} = $device_id;
+	}
+	if($device_bus ne ''){
+		$gpu_h{'devicePCIBusID'} = $device_bus;
+	}
+	$gpu_h{'deviceHandle'} = $handle;
+	#fetching gpu status			
+	$gpu_ref = get_device_status(\%gpu_h);
+	push(@DEVICE_LIST,$gpu_ref);
 }
 
 #parses the device hashes and collects the perf data (only numeric values)
@@ -648,6 +683,8 @@ MAIN: {
 	my @warn_threshold = ();#change thresholds for performance data
 	my @crit_threshold = ();
 	my $verbosity = 0;
+	my $device_id = -1;#the desired gpu device to query
+	my $device_bus = '';#device bus information
 	
 	#Check for nvml installation
 	my $result = '';
@@ -679,6 +716,8 @@ MAIN: {
 		sub{print get_version()."\n";
 				exit(0);
 		},
+		'd|device=i'	=> \$device_id,
+		'db|device-bus=s'	=> \$device_bus,
 		'v|verbosity'	=>	\$verbosity,
 		'vv'			=> sub{$verbosity=2},
 		'vvv'			=> sub{$verbosity=3},
@@ -694,15 +733,26 @@ MAIN: {
 		#we don't want any unused command line arguments
 		print get_usage()."\n";
 		exit(3);
-	}	
+	}
 
 	if(($result = get_driver_version()) eq "NOK"){
 		print "Error: driver version - ".$LASTERRORSTRING.".\n";
 		exit(3);
 	}
 	
+	#the device ID is not present 
+	if($device_id == -1 && $device_bus eq ''){
+		print "Error: Valid PIC bus string or device ID is required.\n";
+		print get_usage()."\n";
+		exit(3);
+	}
+	
 	#Collect the informations about the devices in the system
-	get_all_device_status();
+	if( (get_all_device_status($device_id,$device_bus)) eq "NOK"){
+		print "Ensure to use a valid device id or device bus string.\n";
+		exit(3);
+	}
+	
 	#TODO Is the sensor list only for performance data valid?
 	collect_perf_data(\@sensor_list);
 	my $status_level;
