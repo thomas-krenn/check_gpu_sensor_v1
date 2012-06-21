@@ -63,7 +63,7 @@ sub get_version{
 		print "Error while fetching nvidia driver version: $LASTERRORSTRING\n";
 		exit(3);		
 	}
-	return "check_gpu_sensor version 1.0 beta May 2012
+	return "check_gpu_sensor version 1.1"
 Copyright (C) 2011-2012 Thomas-Krenn.AG (written by Georg Schönberger)
 Current updates available via git repository git.thomas-krenn.com.
 Your system is using NVIDIA driver version ".get_driver_version()." with

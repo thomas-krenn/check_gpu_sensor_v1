@@ -2,7 +2,7 @@
                             check_gpu_sensor
                             =================
 
- check_gpu_sensor: Nagios/Icinga plugin to check GPU sensors vi NVML
+ check_gpu_sensor: Nagios/Icinga plugin to check GPU sensors via NVML
 
  Copyright (C) 2011-2012 Thomas-Krenn.AG,
 
