@@ -758,7 +758,7 @@ MAIN: {
 	my $status_level;
 	$status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
 	#check return values of threshold function
-	if($status_level->[0] eq "Critcal"){
+	if($status_level->[0] eq "Critical"){
 		$EXIT_CODE = 2;#Critical
 	}
 	if($status_level->[0] eq "Warning"){
