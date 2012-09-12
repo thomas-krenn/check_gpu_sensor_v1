@@ -2,6 +2,10 @@
 Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
 ################################################################################
 
+Version 1.2 20120912
+  * The return of check_perf_threshold was not checked correctly. Fixed the
+    string of the return status.
+
 Version 1.1 20120621
   * Switched to single GPU support as it is easy to define multiple
     check_gpu_sensor plugin calls with different device IDs/PCI bus strings.
