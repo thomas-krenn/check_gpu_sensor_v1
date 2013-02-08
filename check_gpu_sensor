@@ -35,8 +35,7 @@ use Switch;
 our $EXIT_CODE = 0; #Exit value of plugin
 our $LASTERRORSTRING = ''; #Error messages of functions
 our @DEVICE_LIST = (); #Array of GPUs in current system
-# TODO Switch to hash and array as perf data cannot be assigned to a specific GPU
-our @PERF_DATA = (); #Array of perf-data per GPU
+our @PERF_DATA = (); #Array of perf-data for GPU
 
 #hash keys we don't want to have in PERF_DATA
 our %EXCLUDE_LIST = (
@@ -717,6 +716,25 @@ sub check_perf_threshold{
 	
 	return \@status_level;
 }
+
+#check the discrete sensors, they just trigger a certain status level
+sub check_discrete_sensors{
+	my @status_level = @{(shift)};#the current status list
+	#fetch the gpu data
+	my $dev_data_ref = $DEVICE_LIST[0];
+	foreach my $k (keys %{$dev_data_ref->{'nvmlDeviceEccInfos'}}){
+		#check for double ecc errors
+		if($k =~ m/.*Dble/){
+			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
+				$status_level[0] = "Critical";
+				#add key to critical array
+				push($status_level[2],$k);
+			}
+		}
+	}
+	return \@status_level;
+}
+
 ###############################################
 # Main function
 # Command line processing and device status collection
@@ -800,7 +818,8 @@ MAIN: {
 	collect_perf_data(\@sensor_list);
 	my $status_level;
 	$status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
-	#check return values of threshold function
+	$status_level = check_discrete_sensors($status_level);
+	#check return values of threshold and discrete sensor function
 	if($status_level->[0] eq "Critical"){
 		$EXIT_CODE = 2;#Critical
 	}
