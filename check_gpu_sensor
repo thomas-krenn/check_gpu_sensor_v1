@@ -378,8 +378,12 @@ sub check_hash_for_perf{
 			#deref it and push it to hash
 			$perf_data_ref->{$k} = ${$hash{$k}};
 		}
+		#integer
+		elsif($hash{$k} =~ /^[+-]?\d+$/){
+			$perf_data_ref->{$k} = $hash{$k};
+		}
+		#float
 		elsif ($hash{$k} =~ /^[-+]?[0-9]*\.?[0-9]+$/ ){
-				#found a numeric value, push it to the given hash reference
 				$perf_data_ref->{$k} = sprintf("%.2f", $hash{$k});
 		}
 	}
