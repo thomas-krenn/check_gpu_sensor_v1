@@ -44,7 +44,13 @@ our %EXCLUDE_LIST = (
 	deviceID => '1',
 	devicePCIBusID => '1',
 	nvmlDevicePciInfo => '1',
-	nvmlDeviceComputeMode => '1'
+	nvmlDeviceComputeMode => '1',
+	pwManagementMode => '1',
+	OEMinforom => '1',
+	ECCinforom => '1',
+	Powerinforom => '1',
+	pendingECCMode => '1',
+	currentECCMode => '1',
 );
 
 #warning and critical default threshold levels
