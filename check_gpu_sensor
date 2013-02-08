@@ -379,7 +379,7 @@ sub check_hash_for_perf{
 			$perf_data_ref->{$k} = ${$hash{$k}};
 		}
 		#integer
-		elsif($hash{$k} =~ /^[+-]?\d+$/){
+		elsif($hash{$k} =~ /^[+-]?[0-9]+$/){
 			$perf_data_ref->{$k} = $hash{$k};
 		}
 		#float
@@ -529,6 +529,10 @@ sub get_device_power{
 	if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
 		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
 		$power_hash{'PWRUsage'} = (handle_error($return,$value));
+		if($return == $NVML_SUCCESS){
+			#convert mW to W
+			$power_hash{'PWRUsage'} /= 1000;
+		}
 	}
 	
 	return \%power_hash;
