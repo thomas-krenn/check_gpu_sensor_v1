@@ -20,8 +20,8 @@
 ################################################################################
 # The following guides provide helpful information if you want to extend this
 # script:
-#   http://nagiosplug.sourceforge.net/developer-guidelines.html (plug-in
-#                  development guidelines)
+#  http://nagiosplug.sourceforge.net/developer-guidelines.html (plug-in
+#  development guidelines)
 ################################################################################
 
 use strict;
@@ -47,7 +47,7 @@ our %EXCLUDE_LIST = (
 	nvmlDeviceComputeMode => '1'
 );
 
-#warning and critical threshold levels
+#warning and critical default threshold levels
 our %PERF_THRESHOLDS = (
 	nvmlGpuTemperature => ['85','100'], #Temperature
 	nvmlUsedMemory => ['95','99'], #Memory utilizaion
@@ -128,7 +128,7 @@ sub get_help{
 
 
 sub check_nvml_setup{
-	#TODO Check for location of nvml library
+	#TODO Check for locations of nvml library
 	my $return = '';
 	if(!(-e "/usr/lib32/libnvidia-ml.so") &&
 		!(-e "/usr/lib32/nvidia-current/libnvidia-ml.so") &&
@@ -694,7 +694,6 @@ MAIN: {
 		exit(3);
 	}
 	#Initialize nvml library
-	nvmlInit();
 	$result = nvmlInit();
 	if($result != $NVML_SUCCESS){
 		print "Debug: NVML initialization failed.\n";
@@ -771,5 +770,12 @@ MAIN: {
 	print get_status_string("Performance",$PERF_DATA[0]);
 	print "\n".get_verbose_string($verbosity,$DEVICE_LIST[0],$show_na);
 
+	#shutdown nvml library
+	$result = nvmlShutdown();
+	if($result != $NVML_SUCCESS){
+		print "Debug: NVML shutdown failed.\n";
+		print "Error: ".nvmlErrorString($result).".\n";
+		exit(3);
+	}
 	exit($EXIT_CODE);	
 }
