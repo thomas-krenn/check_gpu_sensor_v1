@@ -522,6 +522,10 @@ sub get_device_power{
 	#TODO Check if GPU supports power infos (inforom version > 0)
 	($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
+	if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
+		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
+		$power_hash{'PWRUsage'} = (handle_error($return,$value));
+	}
 	
 	return \%power_hash;
 }
