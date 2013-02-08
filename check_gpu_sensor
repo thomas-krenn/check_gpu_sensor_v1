@@ -50,6 +50,11 @@ our %EXCLUDE_LIST = (
 	PWRInforom => '1',
 	pendingECCMode => '1',
 	currentECCMode => '1',
+	ECCMemAggDble => '1',
+	ECCL1AggDble => '1',
+	ECCL2AggDble => '1',
+	ECCRegAggDble => '1',
+	ECCTexAggDble => '1',
 );
 
 #warning and critical default threshold levels
