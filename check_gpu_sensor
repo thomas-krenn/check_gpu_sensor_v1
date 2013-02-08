@@ -45,10 +45,10 @@ our %EXCLUDE_LIST = (
 	devicePCIBusID => '1',
 	nvmlDevicePciInfo => '1',
 	nvmlDeviceComputeMode => '1',
-	pwManagementMode => '1',
-	OEMinforom => '1',
-	ECCinforom => '1',
-	Powerinforom => '1',
+	PWRMgmtMode => '1',
+	OEMInforom => '1',
+	ECCInforom => '1',
+	PWRInforom => '1',
 	pendingECCMode => '1',
 	currentECCMode => '1',
 );
@@ -58,11 +58,11 @@ our %PERF_THRESHOLDS = (
 	nvmlGpuTemperature => ['85','100'], #Temperature
 	nvmlUsedMemory => ['95','99'], #Memory utilizaion
 	nvmlDeviceFanSpeed => ['80','95'], #Fan speed
-	eccMemAggSgl => ['1','2'], #Dev memory ecc errors
-	eccL1AggSgl => ['1','3'], #L1 cache ecc errors
-	eccL2AggSgl => ['1','4'], #L2 cache ecc errors
-	eccRegAggSgl => ['1','5'], #Dev register ecc errors
-	eccTexAggSgl => ['1','6'] #Dev texture cache ecc errors
+	ECCMemAggSgl => ['1','2'], #Dev memory ecc errors
+	ECCL1AggSgl => ['1','2'], #L1 cache ecc errors
+	ECCL2AggSgl => ['1','2'], #L2 cache ecc errors
+	ECCRegAggSgl => ['1','2'], #Dev register ecc errors
+	ECCTexAggSgl => ['1','2'] #Dev texture cache ecc errors
 	#only single ecc errors are configurable
 	#double ecc errors are treated as discrete sensors and issue
 	#a critical status
@@ -115,11 +115,11 @@ sub get_help{
        -nvmlGpuTemperature
        -nvmlUsedMemory
        -nvmlDeviceFanSpeed
-       -eccMemAggSgl
-       -eccL1AggSgl
-       -eccL2AggSgl
-       -eccRegAggSgl
-       -eccTexAggSgl
+       -ECCMemAggSgl
+       -ECCL1AggSgl
+       -ECCL2AggSgl
+       -ECCRegAggSgl
+       -ECCTexAggSgl
        Levels that should stay default get a 'd' assigned.
        Example:
            check_gpu_sensor.pl -w '75,d,d,d,d,d,d,d' 
@@ -448,13 +448,13 @@ sub get_device_inforom{
 	my %inforom_hash;
 	my ($return,$value);
 	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_OEM);
-	$inforom_hash{'OEMinforom'} = handle_error($return,$value);
+	$inforom_hash{'OEMInforom'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_ECC);
-	$inforom_hash{'ECCinforom'} = handle_error($return,$value);
+	$inforom_hash{'ECCInforom'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_POWER);
-	$inforom_hash{'Powerinforom'} = handle_error($return,$value);
+	$inforom_hash{'PWRInforom'} = handle_error($return,$value);
 	
 	return \%inforom_hash;
 }
@@ -469,43 +469,43 @@ sub get_device_ecc{
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
-	$ecc_hash{'eccMemAggSgl'} = handle_error($return,$value);
+	$ecc_hash{'ECCMemAggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
-	$ecc_hash{'eccMemAggDble'} = handle_error($return,$value);
+	$ecc_hash{'ECCMemAggDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
-	$ecc_hash{'eccL1AggSgl'} = handle_error($return,$value);
+	$ecc_hash{'ECCL1AggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
-	$ecc_hash{'eccL1AggDble'} = handle_error($return,$value);
+	$ecc_hash{'ECCL1AggDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
-	$ecc_hash{'eccL2AggSgl'} = handle_error($return,$value);
+	$ecc_hash{'ECCL2AggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
-	$ecc_hash{'eccL2AggDble'} = handle_error($return,$value);
+	$ecc_hash{'ECCL2AggDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
-	$ecc_hash{'eccRegAggSgl'} = handle_error($return,$value);
+	$ecc_hash{'ECCRegAggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
-	$ecc_hash{'eccRegAggDble'} = handle_error($return,$value);
+	$ecc_hash{'ECCRegAggDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
-	$ecc_hash{'eccTexAggSgl'} = handle_error($return,$value);
+	$ecc_hash{'ECCTexAggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
-	$ecc_hash{'eccTexAggDble'} = handle_error($return,$value);
+	$ecc_hash{'ECCTexAggDble'} = handle_error($return,$value);
 	
 	return \%ecc_hash;
 }
@@ -517,7 +517,7 @@ sub get_device_power{
 	
 	#TODO Check if GPU supports power infos (inforom version > 0)
 	($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
-	$power_hash{'pwManagementMode'} = handle_error($return,$value);
+	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
 	
 	return \%power_hash;
 }
@@ -580,7 +580,7 @@ sub get_device_status{
 }
 ###############################################
 # Overall device functions 
-# They collect functions for all devices in the current system
+# They collect functions for a in the current system
 ###############################################
 sub get_all_device_status{
 	my $device_id = shift;
@@ -652,7 +652,6 @@ sub collect_perf_data{
 }
 #checks if the given performance data is in its rangens
 sub check_perf_threshold{
-	
 	my @warn_list = @{(shift)};
 	my @crit_list = @{(shift)};
 	my @status_level = ("OK");
@@ -670,11 +669,11 @@ sub check_perf_threshold{
 					case 0 {$PERF_THRESHOLDS{'nvmlGpuTemperature'}[0] = $warn_list[$i]};
 					case 1 {$PERF_THRESHOLDS{'nvmlUsedMemory'}[0] = $warn_list[$i]};
 					case 2 {$PERF_THRESHOLDS{'nvmlDeviceFanSpeed'}[0] = $warn_list[$i]};
-					case 3 {$PERF_THRESHOLDS{'eccMemAggSgl'}[0] = $warn_list[$i]};
-					case 4 {$PERF_THRESHOLDS{'eccL1AggSgl'}[0] = $warn_list[$i]};
-					case 5 {$PERF_THRESHOLDS{'eccL2AggSgl'}[0] = $warn_list[$i]};
-					case 6 {$PERF_THRESHOLDS{'eccRegAggSgl'}[0] = $warn_list[$i]};
-					case 7 {$PERF_THRESHOLDS{'eccTexAggSgl'}[0] = $warn_list[$i]};
+					case 3 {$PERF_THRESHOLDS{'ECCMemAggSgl'}[0] = $warn_list[$i]};
+					case 4 {$PERF_THRESHOLDS{'ECCL1AggSgl'}[0] = $warn_list[$i]};
+					case 5 {$PERF_THRESHOLDS{'ECCL2AggSgl'}[0] = $warn_list[$i]};
+					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i]};
+					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i]};
 				}
 			}		
 		}			
@@ -687,11 +686,11 @@ sub check_perf_threshold{
 					case 0 {$PERF_THRESHOLDS{'nvmlGpuTemperature'}[1] = $crit_list[$i]};
 					case 1 {$PERF_THRESHOLDS{'nvmlUsedMemory'}[1] = $crit_list[$i]};
 					case 2 {$PERF_THRESHOLDS{'nvmlDeviceFanSpeed'}[1] = $crit_list[$i]};
-					case 3 {$PERF_THRESHOLDS{'eccMemAggSgl'}[1] = $crit_list[$i]};
-					case 4 {$PERF_THRESHOLDS{'eccL1AggSgl'}[1] = $crit_list[$i]};
-					case 5 {$PERF_THRESHOLDS{'eccL2AggSgl'}[1] = $crit_list[$i]};
-					case 6 {$PERF_THRESHOLDS{'eccRegAggSgl'}[1] = $crit_list[$i]};
-					case 7 {$PERF_THRESHOLDS{'eccTexAggSgl'}[1] = $crit_list[$i]};
+					case 3 {$PERF_THRESHOLDS{'ECCMemAggSgl'}[1] = $crit_list[$i]};
+					case 4 {$PERF_THRESHOLDS{'ECCL1AggSgl'}[1] = $crit_list[$i]};
+					case 5 {$PERF_THRESHOLDS{'ECCL2AggSgl'}[1] = $crit_list[$i]};
+					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i]};
+					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i]};
 				}
 			}		
 		}			
