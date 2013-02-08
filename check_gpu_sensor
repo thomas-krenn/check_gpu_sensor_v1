@@ -448,11 +448,14 @@ sub get_device_ecc{
 	$ecc_hash{'currentECCMode'} = handle_error($return,$value);
 	$ecc_hash{'pendingECCMode'} = handle_error($return,$value1);
 	
-	($return,$value) = nvmlDeviceGetDetailedEccErrors($current_device{'deviceHandle'},
+	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
 	$ecc_hash{'devMemVolSgl'} = handle_error($return,$value);
 	
-	($return,$value) = nvmlDeviceGetDetailedEccErrors($current_device{'deviceHandle'},
+	use Data::Dumper;
+	print Dumper($ecc_hash{'devMemVolSgl'});
+	
+	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
 	$ecc_hash{'devMemVolDble'} = handle_error($return,$value);
 	
