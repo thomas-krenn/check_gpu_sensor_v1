@@ -572,8 +572,8 @@ sub get_device_memory{
 	
 	($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
 	$memory_hash = (handle_error($return,$value));
-	if($memory_hash eq "N/A"){
-		$used_memory = "N/A";
+	if($memory_hash eq 'N/A'){
+		$used_memory = 'N/A';
 	}
 	else{
 		$used_memory = 100 * ($memory_hash->{'used'}) / ($memory_hash->{'total'});
@@ -585,12 +585,16 @@ sub get_device_util{
 	my $current_ref = shift;
 	my %current_device = %$current_ref;
 	my %util_hash;
-	my %ret_hash;
 	my ($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
-	%ret_hash = (handle_error($return,$value));
-	$util_hash{'gpuUtil'} = $ret_hash{'gpu'};
-	$util_hash{'memUtil'} = $ret_hash{'memory'};
-	return \%util_hash;
+	my $ret_hash = handle_error($return,$value);
+	if($ret_hash eq 'N/A'){
+		return 'N/A';
+	}
+	else{
+		$util_hash{'gpuUtil'} = $ret_hash->{'gpu'};
+		$util_hash{'memUtil'} = $ret_hash->{'memory'};
+		return \%util_hash;
+	}
 }
 
 sub get_device_status{
