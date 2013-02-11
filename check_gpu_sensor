@@ -302,7 +302,7 @@ sub get_status_string{
 		if(@$curr_sensors){
 			foreach my $sensor (@$curr_sensors){
 				$status_string .= "[".$sensor." = ".$level;
-				if($verbosity){
+				if($verbosity && exists $PERF_DATA[0]->{$sensor}){
 					$status_string .= " (".$PERF_DATA[0]->{$sensor}.")";	
 				}
 				$status_string .= "]";
