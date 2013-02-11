@@ -613,7 +613,7 @@ sub get_device_status{
 	($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
 	$current_device{'nvmlDevicePciInfo'} = (handle_error($return,$value));
 	
-	$current_device{'utilizationRates'} = get_device_util($current_device{'deviceHandle'});
+	$current_device{'utilizationRates'} = get_device_util($current_ref);
 	
 	$return = get_device_clock($current_ref);	
 	$current_device{'nvmlClockInfo'} = $return;
