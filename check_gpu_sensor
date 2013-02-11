@@ -538,6 +538,14 @@ sub get_device_power{
 	
 	return \%power_hash;
 }
+
+sub get_persistence_mode{
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
+	my ($return,$value) = nvmlDeviceGetPersistenceMode($current_device{'deviceHandle'});
+	return handle_error($return,$value);
+}
+
 sub get_device_memory{
 	my $current_ref = shift;
 	my %current_device = %$current_ref;
@@ -592,7 +600,9 @@ sub get_device_status{
 	
 	$return = get_device_memory($current_ref);
 	$current_device{'nvmlUsedMemory'} = $return;
-			
+	
+	$current_device{'persistenceMode'} = get_persistence_mode($current_ref);
+	
 	return \%current_device;
 }
 ###############################################
@@ -743,8 +753,8 @@ sub check_discrete_sensors{
 	my @status_level = @{(shift)};#the current status list
 	#fetch the gpu data
 	my $dev_data_ref = $DEVICE_LIST[0];
+	#check for double ecc errors
 	foreach my $k (keys %{$dev_data_ref->{'nvmlDeviceEccInfos'}}){
-		#check for double ecc errors
 		if($k =~ m/.*Dble/){
 			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
 				$status_level[0] = "Critical";
@@ -753,6 +763,16 @@ sub check_discrete_sensors{
 			}
 		}
 	}
+	#check if persitence mode is available and enbled
+	if(defined($dev_data_ref->{'persistencMode'}) &&
+	$dev_data_ref->{'persistencMode'} == $NVML_FEATURE_DISABLED){
+		#ensure to not drop an already Critical level
+		if($status_level[0] eq 'OK'){
+			$status_level[0] = "Warning";
+		}
+		push($status_level[1],'persistencMode');
+	}
+	
 	return \@status_level;
 }
 
@@ -863,3 +883,36 @@ MAIN: {
 	}
 	exit($EXIT_CODE);	
 }
+
+__END__
+
+=head1 NAME
+
+check_gpu_sensor - A NVIDIA nvml plugin to check gpu sensors.
+
+=head1 SYNOPSIS
+
+Example:
+
+	$ ./check_gpu_sensor -db '0000:83:00.0'
+	OK - Tesla K20c |ECCL2AggSgl=0;1;2; ECCTexAggSgl=0;1;2; PWRUsage=31.43;150;200;
+	ECCRegAggSgl=0;1;2; SMClock=705 ECCL1AggSgl=0;1;2; nvmlUsedMemory=0.24;95;99;
+	nvmlDeviceFanSpeed=30;80;95; memClock=2600 gpu=25 memory=1 graphicsClock=705
+	nvmlGpuTemperature=36;85;100; ECCMemAggSgl=0;1;2;
+	
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=head2 get_device_power
+
+Retreives the device's power usage in watts. Calls nvmlDeviceGetPowerUsage and
+converts the return value (milliwatts) to watts. To set a power level with
+nvidia-smi use (administrator privileges reqired):
+
+	nvidia-smi -i ID -pl POWER_LIMIT
+	
+Limits must be between Min and Max power limit. The limit defines the upper
+bound at which the power managment algorithm starts in.
+
+=head1 DIAGNOSTICS
