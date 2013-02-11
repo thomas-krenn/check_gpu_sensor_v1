@@ -765,13 +765,13 @@ sub check_discrete_sensors{
 		}
 	}
 	#check if persitence mode is available and enbled
-	if(exists($dev_data_ref->{'persistencMode'}) &&
-	$dev_data_ref->{'persistencMode'} == $NVML_FEATURE_DISABLED){
+	if(exists($dev_data_ref->{'persistenceMode'}) &&
+	$dev_data_ref->{'persistenceMode'} == $NVML_FEATURE_DISABLED){
 		#ensure to not drop an already Critical level
 		if($status_level[0] eq 'OK'){
 			$status_level[0] = "Warning";
 		}
-		push($status_level[1],'persistencMode');
+		push($status_level[1],'persistenceMode');
 	}
 	
 	return \@status_level;
