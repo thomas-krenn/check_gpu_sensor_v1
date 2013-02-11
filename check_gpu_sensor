@@ -56,6 +56,7 @@ our %EXCLUDE_LIST = (
 	ECCRegAggDble => '1',
 	ECCTexAggDble => '1',
 	persistenceMode => '1',
+	inforomValid => '1'
 );
 
 #warning and critical default threshold levels
@@ -547,6 +548,16 @@ sub get_persistence_mode{
 	return handle_error($return,$value);
 }
 
+sub get_inforom_validation{
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
+	my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
+	if ($return == $NVML_ERROR_NOT_SUPPORTED){
+		$return = 'N/A';
+	}
+	return $return;
+}
+
 sub get_device_memory{
 	my $current_ref = shift;
 	my %current_device = %$current_ref;
@@ -603,6 +614,8 @@ sub get_device_status{
 	$current_device{'nvmlUsedMemory'} = $return;
 	
 	$current_device{'persistenceMode'} = get_persistence_mode($current_ref);
+	
+	$current_device{'inforomValid'} = get_inforom_validation($current_ref);
 	
 	return \%current_device;
 }
@@ -764,7 +777,7 @@ sub check_discrete_sensors{
 			}
 		}
 	}
-	#check if persitence mode is available and enbled
+	#check if persistence mode is available and enabled
 	if(exists($dev_data_ref->{'persistenceMode'}) &&
 	$dev_data_ref->{'persistenceMode'} == $NVML_FEATURE_DISABLED){
 		#ensure to not drop an already Critical level
@@ -773,7 +786,15 @@ sub check_discrete_sensors{
 		}
 		push($status_level[1],'persistenceMode');
 	}
-	
+	#check if inforom checksum is valid
+	if(exists($dev_data_ref->{'inforomValid'}) &&
+	$dev_data_ref->{'inforomValid'} == $NVML_ERROR_CORRUPTED_INFOROM){
+		#ensure to not drop an already Critical level
+		if($status_level[0] eq 'OK'){
+			$status_level[0] = "Critical";
+		}
+		push($status_level[2],'inforomValid');
+	}
 	return \@status_level;
 }
 
@@ -911,9 +932,31 @@ Retreives the device's power usage in watts. Calls nvmlDeviceGetPowerUsage and
 converts the return value (milliwatts) to watts. To set a power level with
 nvidia-smi use (administrator privileges reqired):
 
-	nvidia-smi -i ID -pl POWER_LIMIT
+	$ sudo nvidia-smi -i ID -pl POWER_LIMIT
 	
 Limits must be between Min and Max power limit. The limit defines the upper
-bound at which the power managment algorithm starts in.
+bound at which the power managment algorithm starts in. To get the supported
+power limits execute:
+
+	$ nvidia-smi -i 0 -q -d POWER
+	
+Performance threasholds set via the plugin are independent from the
+nvidia-smi one's.'
+
+=head2 get_persistence_mode
+
+Gets the device's persistence mode setting (due to nvidia-smi documentation
+only on Linux available. If the setting is available it later on checks if
+the mode is enabled. As it more convenient to use the persistence mode a
+Warning status is triggered if the persistence mode is not enabled. Enable
+the mode with:
+
+	$ sudo nvidia-smi -i ID -pm 1
+
+=head2 get_inforom_validation
+
+Reads the inforom from the flash file and verifys the checksum. If the
+inforom is corrupted the sensor is treated as a discrete sensor and
+a critical status is returned.
 
 =head1 DIAGNOSTICS
