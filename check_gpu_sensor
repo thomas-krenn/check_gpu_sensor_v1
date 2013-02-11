@@ -72,7 +72,10 @@ our %PERF_THRESHOLDS = (
 	ECCL2AggSgl => ['1','2'], #L2 cache ecc errors
 	ECCRegAggSgl => ['1','2'], #Dev register ecc errors
 	ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
-	PWRUsage => ['150','200']
+	PWRUsage => ['150','200'],
+	#device utilization rates
+	gpuUtil => ['90','100'],
+	memUtil => ['90','100'],
 );
 
 ###############################################
@@ -128,16 +131,18 @@ sub get_help{
        -ECCRegAggSgl
        -ECCTexAggSgl
        -PWRUsage
+       -gpuUtil
+       -memUtil
        Levels that should stay default get a 'd' assigned.
        Example:
-           check_gpu_sensor.pl -w '75,d,d,d,d,d,d,d,d' 
+           check_gpu_sensor -w '75,d,d,d,d,d,d,d,d,d,d' 
        This changes the warning level for the temperature.
   [-c <list of critical thresholds>]
        Change the default critical levels. The order of the levels
        is the same as for the warning levels.
        Levels that should stay default get a 'd' assigned.
        Example:
-           check_gpu_sensor.pl -c '100,d,d,d,d,d,d,d,d' 
+           check_gpu_sensor -c '100,d,d,d,d,d,d,d,d,d,d' 
        This changes the critical level for the temperature.  		
   [-v <Verbose Level>]
        be verbose
@@ -575,6 +580,19 @@ sub get_device_memory{
 	}
 	return $used_memory;	
 }
+
+sub get_device_util{
+	my $current_ref = shift;
+	my %current_device = %$current_ref;
+	my %util_hash;
+	my %ret_hash;
+	my ($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
+	%ret_hash = (handle_error($return,$value));
+	$util_hash{'gpuUtil'} = $ret_hash{'gpu'};
+	$util_hash{'memUtil'} = $ret_hash{'memory'};
+	return \%util_hash;
+}
+
 sub get_device_status{
 	my $current_ref = shift;
 	my %current_device = %$current_ref;
@@ -595,8 +613,7 @@ sub get_device_status{
 	($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
 	$current_device{'nvmlDevicePciInfo'} = (handle_error($return,$value));
 	
-	($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
-	$current_device{'nvmlDeviceUtilizationRates'} = (handle_error($return,$value));
+	$current_device{'utilizationRates'} = get_device_util($current_device{'deviceHandle'});
 	
 	$return = get_device_clock($current_ref);	
 	$current_device{'nvmlClockInfo'} = $return;
@@ -716,6 +733,8 @@ sub check_perf_threshold{
 					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i]};
 					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i]};
 					case 8 {$PERF_THRESHOLDS{'PWRUsage'}[0] = $warn_list[$i]};
+					case 9 {$PERF_THRESHOLDS{'gpuUtil'}[0] = $warn_list[$i]};
+					case 10 {$PERF_THRESHOLDS{'memUtil'}[0] = $warn_list[$i]};
 				}
 			}		
 		}			
@@ -734,6 +753,8 @@ sub check_perf_threshold{
 					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i]};
 					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i]};
 					case 8 {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i]};
+					case 9 {$PERF_THRESHOLDS{'gpuUtil'}[1] = $crit_list[$i]};
+					case 10 {$PERF_THRESHOLDS{'memUtil'}[1] = $crit_list[$i]};
 				}
 			}		
 		}			
