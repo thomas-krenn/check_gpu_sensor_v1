@@ -185,25 +185,14 @@ sub handle_error{
 	my $return = $_[0];
 	my $value = $_[1];
 	my $is_hash = $_[2];
-	
 	if($return == $NVML_SUCCESS){
 		return $value;	
 	}
 	else{
 		if($return == $NVML_ERROR_NOT_SUPPORTED){
-			if(defined $is_hash){
-				foreach my $k (keys %$value){
-					$value->{$k} = "N/A";					
-				}
-				return $value;
-			}			
-			return "N/A";	
+			return 'N/A';	
 		}
 		else{
-			if(defined $is_hash){
-				my %error_pair = ('Error',nvmlErrorString($return));				
-				return \%error_pair;
-			}	
 			return nvmlErrorString($return);
 		}
 	}	
@@ -218,11 +207,11 @@ sub print_hash{
 	my $is_na = 1;
 	
 	foreach my $k (keys %{$hash_ref}) {
-		if($hash_ref->{$k} ne "N/A"){
+		if($hash_ref->{$k} ne 'N/A'){
 			$is_na = 0;
 		}
 		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} eq "N/A"){
+		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
 			next;
 		}
 		if(ref($hash_ref->{$k}) eq "SCALAR"){
@@ -234,7 +223,7 @@ sub print_hash{
 	}
 	#if all values are N/A, return this
 	if($is_na){
-		return "N/A";
+		return 'N/A';
 	}
 	else{
 		return $string;
@@ -252,15 +241,15 @@ sub get_hash_values{
 			next;#we don't want to print driver handles
 		}
 		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} eq "N/A"){
+		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
 			next;
 		}
 		#if we found a hash, call the print_hash function
 		#if all values of a hash are N/A, the hash itself gets
 		#the string N/A assigned
-		if(ref($hash_ref->{$k}) eq "HASH"){
+		if(ref($hash_ref->{$k}) eq 'HASH'){
 				my $hash_string = print_hash($hash_ref->{$k},$show_na);
-				if($hash_string eq "N/A"){
+				if($hash_string eq 'N/A'){
 					if(defined $show_na){
 						$string .= "-$k: $hash_string\n";
 					}
@@ -270,7 +259,7 @@ sub get_hash_values{
 					$string .= $hash_string;
 				}
 		}
-		elsif(ref($hash_ref->{$k}) eq "SCALAR"){
+		elsif(ref($hash_ref->{$k}) eq 'SCALAR'){
 			$string .= "-$k: $$hash_ref->{$k}\n";
 		}
 		else{
@@ -373,12 +362,12 @@ sub check_hash_for_perf{
 		if(exists $EXCLUDE_LIST{$k}){
 			next;
 		}
-		if(ref($hash{$k}) eq "HASH"){
+		if(ref($hash{$k}) eq 'HASH'){
 			#the param sensor_list is switched to the hash keys for the next call of check_hash
 			my @key_list = keys %{$hash{$k}};
 			$perf_data_ref = check_hash_for_perf($hash{$k},$perf_data_ref,\@key_list);
 		}
-		elsif(ref($hash{$k}) eq "SCALAR"){
+		elsif(ref($hash{$k}) eq 'SCALAR'){
 			#found a ref to a numeric value
 			#deref it and push it to hash
 			$perf_data_ref->{$k} = ${$hash{$k}};
@@ -414,8 +403,7 @@ sub get_nvml_version{
 	}	
 }
 sub get_driver_version{
-	my ($return, $version);
-	($return, $version) = nvmlSystemGetDriverVersion();
+	my ($return, $version) = nvmlSystemGetDriverVersion();
 	if($return == $NVML_SUCCESS){
 		return $version;
 	}
@@ -425,8 +413,7 @@ sub get_driver_version{
 	}	
 }
 sub get_device_count{
-	my ($return, $count);
-	($return, $count) = nvmlDeviceGetCount();
+	my ($return, $count) = nvmlDeviceGetCount();
 	if($return == $NVML_SUCCESS){
 		return $count;
 	}
@@ -440,11 +427,9 @@ sub get_device_count{
 # They are used to query parameters from a device
 ###############################################
 sub get_device_clock{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
+	my %current_device = %{(shift)};
 	my %clock_hash;
-	my ($return,$value);
-	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
+	my ($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
 	$clock_hash{'graphicsClock'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_SM);
@@ -456,11 +441,9 @@ sub get_device_clock{
 	return \%clock_hash;
 }
 sub get_device_inforom{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
+	my %current_device = %{(shift)};
 	my %inforom_hash;
-	my ($return,$value);
-	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_OEM);
+	my ($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_OEM);
 	$inforom_hash{'OEMInforom'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_ECC);
@@ -523,7 +506,7 @@ sub get_device_ecc{
 	return \%ecc_hash;
 }
 sub get_device_power{
-	my %current_device = {(shift)};
+	my %current_device = %{(shift)};
 	my %power_hash;
 	my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
@@ -539,13 +522,13 @@ sub get_device_power{
 }
 
 sub get_persistence_mode{
-	my %current_device = {(shift)};
+	my %current_device = %{(shift)};
 	my ($return,$value) = nvmlDeviceGetPersistenceMode($current_device{'deviceHandle'});
 	return handle_error($return,$value);
 }
 
 sub get_inforom_validation{
-	my %current_device = {(shift)};
+	my %current_device = %{(shift)};
 	my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
 	if ($return == $NVML_ERROR_NOT_SUPPORTED){
 		$return = 'N/A';
@@ -554,7 +537,7 @@ sub get_inforom_validation{
 }
 
 sub get_device_memory{
-	my %current_device = {(shift)};
+	my %current_device = %{(shift)};
 	my $used_memory;
 	my ($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
 	my $memory_hash = handle_error($return,$value);
@@ -568,7 +551,7 @@ sub get_device_memory{
 }
 
 sub get_device_util{
-	my %current_device = {(shift)};
+	my %current_device = %{(shift)};
 	my %util_hash;
 	my ($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
 	my $ret_hash = handle_error($return,$value);
