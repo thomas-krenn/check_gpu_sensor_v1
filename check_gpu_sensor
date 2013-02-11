@@ -55,8 +55,6 @@ our %EXCLUDE_LIST = (
 	ECCL2AggDble => '1',
 	ECCRegAggDble => '1',
 	ECCTexAggDble => '1',
-	PWRMinLimit => '1',
-	PWRMaxLimit => '1',
 );
 
 #warning and critical default threshold levels
@@ -64,17 +62,14 @@ our %PERF_THRESHOLDS = (
 	nvmlGpuTemperature => ['85','100'], #Temperature
 	nvmlUsedMemory => ['95','99'], #Memory utilizaion
 	nvmlDeviceFanSpeed => ['80','95'], #Fan speed
+	#only single ecc errors are configurable
+	#double ecc errors are treated as discrete sensors and issue
+	#a critical status
 	ECCMemAggSgl => ['1','2'], #Dev memory ecc errors
 	ECCL1AggSgl => ['1','2'], #L1 cache ecc errors
 	ECCL2AggSgl => ['1','2'], #L2 cache ecc errors
 	ECCRegAggSgl => ['1','2'], #Dev register ecc errors
 	ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
-	#only single ecc errors are configurable
-	#double ecc errors are treated as discrete sensors and issue
-	#a critical status
-	#PWRUsage is a special case, if values at the device level is set
-	#we take the value from there. Nevertheless it is nice to set them
-	#also at plugin side.
 	PWRUsage => ['150','200']
 );
 
@@ -130,16 +125,17 @@ sub get_help{
        -ECCL2AggSgl
        -ECCRegAggSgl
        -ECCTexAggSgl
+       -PWRUsage
        Levels that should stay default get a 'd' assigned.
        Example:
-           check_gpu_sensor.pl -w '75,d,d,d,d,d,d,d' 
+           check_gpu_sensor.pl -w '75,d,d,d,d,d,d,d,d' 
        This changes the warning level for the temperature.
   [-c <list of critical thresholds>]
        Change the default critical levels. The order of the levels
        is the same as for the warning levels.
        Levels that should stay default get a 'd' assigned.
        Example:
-           check_gpu_sensor.pl -c '100,d,d,d,d,d,d,d' 
+           check_gpu_sensor.pl -c '100,d,d,d,d,d,d,d,d' 
        This changes the critical level for the temperature.  		
   [-v <Verbose Level>]
        be verbose
@@ -529,7 +525,6 @@ sub get_device_power{
 	my %power_hash;
 	my ($return,$value);
 	
-	#TODO Check if GPU supports power infos (inforom version > 0)
 	($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
 	if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
@@ -538,14 +533,6 @@ sub get_device_power{
 		if($return == $NVML_SUCCESS){
 			#convert mW to W
 			$power_hash{'PWRUsage'} /= 1000;
-		}
-		my ($return,$pwrMin,$pwrMax) = nvmlDeviceGetPowerManagementLimitConstraints($current_device{'deviceHandle'});
-		$power_hash{'PWRMinLimit'} = (handle_error($return,$pwrMin));
-		$power_hash{'PWRMaxLimit'} = (handle_error($return,$pwrMax));
-		if($return == $NVML_SUCCESS){
-			#convert mW to W
-			$power_hash{'PWRMinLimit'} /= 1000;
-			$power_hash{'PWRMaxLimit'} /= 1000;
 		}
 	}
 	
@@ -729,15 +716,6 @@ sub check_perf_threshold{
 	}
 	#fetch the perfdata of the gpu
 	my $perf_hash = $PERF_DATA[0];
-	
-	#power usage is a special case, we use the levels set by the device
-	#if they are present
-	if(exists $perf_hash->{'PWRUsage'} &&
-		exists $perf_hash->{'PWRMinLimit'} &&
-		exists $perf_hash->{'PWRMaxLimit'}){
-		$PERF_THRESHOLDS{'PWRUsage'}[0] = $perf_hash->{'PWRMinLimit'};
-		$PERF_THRESHOLDS{'PWRUsage'}[1] = $perf_hash->{'PWRMaxLimit'};
-	}
 	
 	foreach my $k (keys %$perf_hash){
 		if(exists $PERF_THRESHOLDS{$k}){
