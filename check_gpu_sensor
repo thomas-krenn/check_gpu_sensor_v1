@@ -247,10 +247,6 @@ sub get_hash_values{
 	my $string = "";
 	my $is_na = 1;
 	
-	if(exists $hash_ref->{'Error'}){
-		$string .= "Error: ".$hash_ref->{'Error'}."\n";
-		return $string;
-	}
 	foreach my $k (keys %{$hash_ref}) {
 		if($k eq "deviceHandle"){
 			next;#we don't want to print driver handles
@@ -527,35 +523,29 @@ sub get_device_ecc{
 	return \%ecc_hash;
 }
 sub get_device_power{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
+	my %current_device = {(shift)};
 	my %power_hash;
-	my ($return,$value);
-	
-	($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
+	my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
 	if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
 		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
-		$power_hash{'PWRUsage'} = (handle_error($return,$value));
+		$power_hash{'PWRUsage'} = handle_error($return,$value);
 		if($return == $NVML_SUCCESS){
 			#convert mW to W
 			$power_hash{'PWRUsage'} /= 1000;
 		}
 	}
-	
 	return \%power_hash;
 }
 
 sub get_persistence_mode{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
+	my %current_device = {(shift)};
 	my ($return,$value) = nvmlDeviceGetPersistenceMode($current_device{'deviceHandle'});
 	return handle_error($return,$value);
 }
 
 sub get_inforom_validation{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
+	my %current_device = {(shift)};
 	my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
 	if ($return == $NVML_ERROR_NOT_SUPPORTED){
 		$return = 'N/A';
@@ -564,36 +554,31 @@ sub get_inforom_validation{
 }
 
 sub get_device_memory{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
-	my $memory_hash;
-	my $used_memory = -1;
-	my ($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
-	$memory_hash = (handle_error($return,$value));
-	if($memory_hash eq 'N/A'){
-		$used_memory = 'N/A';
+	my %current_device = {(shift)};
+	my $used_memory;
+	my ($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
+	my $memory_hash = handle_error($return,$value);
+	if($return == $NVML_SUCCESS){
+		$used_memory = 100 * ($memory_hash->{'used'}) / ($memory_hash->{'total'});
+		return $used_memory;
 	}
 	else{
-		$used_memory = 100 * ($memory_hash->{'used'}) / ($memory_hash->{'total'});
+		return $memory_hash;
 	}
-	return $used_memory;	
 }
 
 sub get_device_util{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
+	my %current_device = {(shift)};
 	my %util_hash;
 	my ($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
 	my $ret_hash = handle_error($return,$value);
-	if($ret_hash eq 'N/A'){
-		return 'N/A';
-	}
-	else{
+	if($return == $NVML_SUCCESS){
 		$util_hash{'gpuUtil'} = $ret_hash->{'gpu'};
 		$util_hash{'memUtil'} = $ret_hash->{'memory'};
 		return \%util_hash;
+	}
+	else{
+		return $ret_hash;
 	}
 }
 
