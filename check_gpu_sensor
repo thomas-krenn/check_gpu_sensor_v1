@@ -55,6 +55,7 @@ our %EXCLUDE_LIST = (
 	ECCL2AggDble => '1',
 	ECCRegAggDble => '1',
 	ECCTexAggDble => '1',
+	persistenceMode => '1',
 );
 
 #warning and critical default threshold levels
@@ -764,7 +765,7 @@ sub check_discrete_sensors{
 		}
 	}
 	#check if persitence mode is available and enbled
-	if(defined($dev_data_ref->{'persistencMode'}) &&
+	if(exists($dev_data_ref->{'persistencMode'}) &&
 	$dev_data_ref->{'persistencMode'} == $NVML_FEATURE_DISABLED){
 		#ensure to not drop an already Critical level
 		if($status_level[0] eq 'OK'){
