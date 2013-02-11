@@ -66,10 +66,11 @@ our %PERF_THRESHOLDS = (
 	ECCL1AggSgl => ['1','2'], #L1 cache ecc errors
 	ECCL2AggSgl => ['1','2'], #L2 cache ecc errors
 	ECCRegAggSgl => ['1','2'], #Dev register ecc errors
-	ECCTexAggSgl => ['1','2'] #Dev texture cache ecc errors
+	ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
 	#only single ecc errors are configurable
 	#double ecc errors are treated as discrete sensors and issue
 	#a critical status
+	PWRUsage => ['150','200']
 );
 
 ###############################################
@@ -533,6 +534,14 @@ sub get_device_power{
 			#convert mW to W
 			$power_hash{'PWRUsage'} /= 1000;
 		}
+		my ($return,$pwrMin,$pwrMax) = nvmlDeviceGetPowerManagementLimitConstraints($current_device{'deviceHandle'});
+		$power_hash{'PWRMinLimit'} = (handle_error($return,$pwrMin));
+		$power_hash{'PWRMaxLimit'} = (handle_error($return,$pwrMax));
+		if($return == $NVML_SUCCESS){
+			#convert mW to W
+			$power_hash{'PWRMinLimit'} /= 1000;
+			$power_hash{'PWRMaxLimit'} /= 1000;
+		}
 	}
 	
 	return \%power_hash;
@@ -678,7 +687,7 @@ sub check_perf_threshold{
 	if(@warn_list){
 		@warn_list = split(/,/, join(',', @warn_list));
 		for ($i = 0; $i < @warn_list; $i++){
-			#everything, except that values that sould stay default, get new values
+			#everything, except that values that should stay default, get new values
 			#e.g. -w d,15,60 changes the warning level for sensor 2 and 3 but not for 1
 			if($warn_list[$i] ne 'd'){
 				switch($i){
@@ -690,6 +699,7 @@ sub check_perf_threshold{
 					case 5 {$PERF_THRESHOLDS{'ECCL2AggSgl'}[0] = $warn_list[$i]};
 					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i]};
 					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i]};
+					case 8 {$PERF_THRESHOLDS{'PWRUsage'}[0] = $warn_list[$i]};
 				}
 			}		
 		}			
@@ -707,12 +717,23 @@ sub check_perf_threshold{
 					case 5 {$PERF_THRESHOLDS{'ECCL2AggSgl'}[1] = $crit_list[$i]};
 					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i]};
 					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i]};
+					case 8 {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i]};
 				}
 			}		
 		}			
 	}
 	#fetch the perfdata of the gpu
 	my $perf_hash = $PERF_DATA[0];
+	
+	#power usage is a special case, we use the levels set by the device
+	#if they are present
+	if(exists $perf_hash->{'PWRUsage'} &&
+		exists $perf_hash->{'PWRMinLimit'} &&
+		exists $perf_hash->{'PWRMaxLimit'}){
+		$PERF_THRESHOLDS{'PWRUsage'}[0] = $perf_hash->{'PWRMinLimit'};
+		$PERF_THRESHOLDS{'PWRUsage'}[1] = $perf_hash->{'PWRMaxLimit'};
+	}
+	
 	foreach my $k (keys %$perf_hash){
 		if(exists $PERF_THRESHOLDS{$k}){
 			#warning level
