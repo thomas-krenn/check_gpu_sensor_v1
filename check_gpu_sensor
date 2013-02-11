@@ -55,6 +55,8 @@ our %EXCLUDE_LIST = (
 	ECCL2AggDble => '1',
 	ECCRegAggDble => '1',
 	ECCTexAggDble => '1',
+	PWRMinLimit => '1',
+	PWRMaxLimit => '1',
 );
 
 #warning and critical default threshold levels
@@ -70,6 +72,9 @@ our %PERF_THRESHOLDS = (
 	#only single ecc errors are configurable
 	#double ecc errors are treated as discrete sensors and issue
 	#a critical status
+	#PWRUsage is a special case, if values at the device level is set
+	#we take the value from there. Nevertheless it is nice to set them
+	#also at plugin side.
 	PWRUsage => ['150','200']
 );
 
