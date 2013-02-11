@@ -455,11 +455,9 @@ sub get_device_inforom{
 	return \%inforom_hash;
 }
 sub get_device_ecc{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
+	my %current_device = %{(shift)};
 	my %ecc_hash;
-	my ($return,$value,$value1);
-	($return,$value,$value1) = nvmlDeviceGetEccMode($current_device{'deviceHandle'});
+	my ($return,$value,$value1) = nvmlDeviceGetEccMode($current_device{'deviceHandle'});
 	$ecc_hash{'currentECCMode'} = handle_error($return,$value);
 	$ecc_hash{'pendingECCMode'} = handle_error($return,$value1);
 	
