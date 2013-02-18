@@ -50,11 +50,11 @@ our %EXCLUDE_LIST = (
 	PWRInforom => '1',
 	pendingECCMode => '1',
 	currentECCMode => '1',
-	ECCMemAggDble => '1',
-	ECCL1AggDble => '1',
-	ECCL2AggDble => '1',
-	ECCRegAggDble => '1',
-	ECCTexAggDble => '1',
+	ECCMemVolDble => '1',
+	ECCL1VolDble => '1',
+	ECCL2VolDble => '1',
+	ECCRegVolDble => '1',
+	ECCTexVolDble => '1',
 	persistenceMode => '1',
 	inforomValid => '1'
 );
@@ -466,40 +466,40 @@ sub get_device_ecc{
 	$ecc_hash{'ECCMemAggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
-	$ecc_hash{'ECCMemAggDble'} = handle_error($return,$value);
+		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
+	$ecc_hash{'ECCMemVolDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
 	$ecc_hash{'ECCL1AggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
-	$ecc_hash{'ECCL1AggDble'} = handle_error($return,$value);
+		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
+	$ecc_hash{'ECCL1VolDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
 	$ecc_hash{'ECCL2AggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
-	$ecc_hash{'ECCL2AggDble'} = handle_error($return,$value);
+		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
+	$ecc_hash{'ECCL2VolDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
 	$ecc_hash{'ECCRegAggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
-	$ecc_hash{'ECCRegAggDble'} = handle_error($return,$value);
+		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
+	$ecc_hash{'ECCRegVolDble'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
 		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
 	$ecc_hash{'ECCTexAggSgl'} = handle_error($return,$value);
 	
 	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
-	$ecc_hash{'ECCTexAggDble'} = handle_error($return,$value);
+		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
+	$ecc_hash{'ECCTexVolDble'} = handle_error($return,$value);
 	
 	return \%ecc_hash;
 }
