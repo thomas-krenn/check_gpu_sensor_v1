@@ -764,7 +764,7 @@ sub check_discrete_sensors{
 			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
 				$status_level[0] = "Critical";
 				#add key to critical array
-				push($status_level[2],$k);
+				push(@{$status_level[2]},$k);
 			}
 		}
 	}
@@ -775,7 +775,7 @@ sub check_discrete_sensors{
 		if($status_level[0] eq 'OK'){
 			$status_level[0] = "Warning";
 		}
-		push($status_level[1],'persistenceMode');
+		push(@{$status_level[1]},'persistenceMode');
 	}
 	#check if inforom checksum is valid
 	if(exists($dev_data_ref->{'inforomValid'}) &&
@@ -784,7 +784,7 @@ sub check_discrete_sensors{
 		if($status_level[0] eq 'OK'){
 			$status_level[0] = "Critical";
 		}
-		push($status_level[2],'inforomValid');
+		push(@{$status_level[2]},'inforomValid');
 	}
 	return \@status_level;
 }
