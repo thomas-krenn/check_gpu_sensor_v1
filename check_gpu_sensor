@@ -484,7 +484,8 @@ sub get_device_power{
 	my %power_hash;
 	my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
-	if($return == $NVML_FEATURE_ENABLED){
+	if($return == $NVML_SUCCESS &&
+		$value == $NVML_FEATURE_ENABLED){
 		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
 		$power_hash{'PWRUsage'} = handle_error($return,$value);
 		if($return == $NVML_SUCCESS){
