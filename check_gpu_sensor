@@ -100,7 +100,7 @@ sub get_help{
         Return information about the GPU with the given device ID. IDs
         can be checked with the nvidia-smi tool. Attention: It is not
         ensured that device IDs are persistent across reboots. The safest
-        way is to define a device bus string via '-db' which can be found out
+        way is to define a device bus string via '-db' which can be found
         with nvidia-smi.
   [-db <pci bus string>]
         Check the GPU with the corresponding pci bus device string. The pci bus
@@ -942,7 +942,7 @@ Example:
 	ECCRegAggSgl=0;1;2; SMClock=705 ECCL1AggSgl=0;1;2; usedMemory=0.24;95;99;
 	fanSpeed=30;80;95; memClock=2600 GPUUtilRate=25 memUtilRate=1 graphicsClock=705
 	GPUTemperature=36;85;100; ECCMemAggSgl=0;1;2;
-	
+
 =head1 DESCRIPTION
 
 =head1 METHODS
@@ -1034,13 +1034,13 @@ value (milliwatts) to watts. To set a power level with nvidia-smi use
 (administrator privileges reqired):
 
 	$ sudo nvidia-smi -i ID -pl POWER_LIMIT
-	
+
 Limits must be between Min and Max power limit. The limit defines the upper
 bound at which the power managment algorithm starts in. To get the supported
 power limits execute:
 
 	$ nvidia-smi -i 0 -q -d POWER
-	
+
 Performance thresholds set via the plugin are independent from the
 nvidia-smi one's.'
 
@@ -1153,3 +1153,48 @@ For the given device identifier a valid device handle could not be created.
 NVML did not shutdown correctly.
 
 =back
+
+=head1 DEPENDENCIES
+
+	use strict;
+	use warnings;
+	use nvidia::ml qw(:all);
+	use Getopt::Long qw(:config no_ignore_case);
+	use Switch;
+
+=head1 AUTHOR
+
+Georg Schönberger  C<< <gschoenberger@thomas-krenn.com> >>
+
+=head1 LICENCE AND COPYRIGHT
+
+Copyright (c) 2012, Georg Schönberger C<< <gschoenberger@thomas-krenn.com> >>.
+All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
+
+=head1 DISCLAIMER OF WARRANTY
+
+BECAUSE THIS SOFTWARE IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+FOR THE SOFTWARE, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN
+OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+PROVIDE THE SOFTWARE "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE
+ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH
+YOU. SHOULD THE SOFTWARE PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL
+NECESSARY SERVICING, REPAIR, OR CORRECTION.
+
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+REDISTRIBUTE THE SOFTWARE AS PERMITTED BY THE ABOVE LICENCE, BE
+LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL,
+OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE
+THE SOFTWARE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING
+RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
+FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
+SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
