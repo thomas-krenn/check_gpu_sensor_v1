@@ -775,7 +775,7 @@ sub check_discrete_sensors{
 	#check if inforom checksum is valid
 	if(exists($dev_data_ref->{'inforomValid'}) &&
 		$dev_data_ref->{'inforomValid'} ne 'N/A'){
-		if($dev_data_ref->{'inforomValid'} != 'valid'){
+		if($dev_data_ref->{'inforomValid'} ne 'valid'){
 			$status_level[0] = "Critical";
 			push(@{$status_level[2]},'inforomValid');
 		}
