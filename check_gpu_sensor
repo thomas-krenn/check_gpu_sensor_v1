@@ -191,7 +191,7 @@ sub handle_error{
 sub print_hash{
 	my $hash_ref = shift;
 	my $show_na = shift;
-	my $string;
+	my $string = "";
 	my $is_na = 1;
 	
 	foreach my $k (keys %{$hash_ref}) {
@@ -221,7 +221,7 @@ sub print_hash{
 sub get_hash_values{
 	my $hash_ref = shift;#reference to device hash
 	my $show_na = shift;
-	my $string;
+	my $string = "";
 	my $is_na = 1;
 	
 	foreach my $k (keys %{$hash_ref}) {
@@ -261,7 +261,7 @@ sub get_status_string{
 	my $level = shift;
 	my $curr_sensors = shift;
 	my $verbosity = shift;
-	my $status_string;
+	my $status_string = "";
 
 	if($level ne "Warning" && $level ne "Critical"
 		&& $level ne "Performance"){
@@ -312,7 +312,7 @@ sub get_verbose_string{
 	my $verbosity = shift;
 	my $device = shift;
 	my $show_na = shift;
-	my $status_string;
+	my $status_string = "";
 	
 	if($verbosity == 3){
 		$status_string .= "------------- begin of debug output (-vvv is set): ------------\n";
