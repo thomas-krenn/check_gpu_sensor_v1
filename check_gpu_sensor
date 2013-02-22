@@ -498,13 +498,34 @@ sub get_device_power{
 sub get_persistence_mode{
 	my %current_device = %{(shift)};
 	my ($return,$value) = nvmlDeviceGetPersistenceMode($current_device{'deviceHandle'});
-	return handle_error($return,$value);
+	if($return == $NVML_SUCCESS){
+		if($value == $NVML_FEATURE_ENABLED){
+			return 'enabled';
+		}
+		if($value == $NVML_FEATURE_DISABLED){
+			return 'disabled';
+		}
+	}
+	elsif($return == $NVML_ERROR_NOT_SUPPORTED){
+		return 'N/A';
+	}
+	else{
+		return nvmlErrorString($return);
+	}
 }
 
 sub get_inforom_validation{
 	my %current_device = %{(shift)};
-	my ($return,$value) = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
-	return handle_error($return,$value);
+	my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
+	if($return == $NVML_SUCCESS){
+		return 'valid';
+	}
+	elsif($return == $NVML_ERROR_NOT_SUPPORTED){
+		return 'N/A';
+	}
+	else{
+		return nvmlErrorString($return);
+	}
 }
 
 sub get_device_memory{
@@ -743,7 +764,7 @@ sub check_discrete_sensors{
 	#check if persistence mode is available and enabled
 	if(exists($dev_data_ref->{'persistenceMode'}) && 
 		$dev_data_ref->{'persistenceMode'} ne 'N/A'){
-		if($dev_data_ref->{'persistenceMode'} == $NVML_FEATURE_DISABLED){
+		if($dev_data_ref->{'persistenceMode'} eq 'disabled'){
 			#ensure to not drop an already Critical level
 			if($status_level[0] eq 'OK'){
 				$status_level[0] = "Warning";
@@ -754,7 +775,7 @@ sub check_discrete_sensors{
 	#check if inforom checksum is valid
 	if(exists($dev_data_ref->{'inforomValid'}) &&
 		$dev_data_ref->{'inforomValid'} ne 'N/A'){
-		if($dev_data_ref->{'inforomValid'} == $NVML_ERROR_CORRUPTED_INFOROM){
+		if($dev_data_ref->{'inforomValid'} != 'valid'){
 			$status_level[0] = "Critical";
 			push(@{$status_level[2]},'inforomValid');
 		}
@@ -996,6 +1017,6 @@ the mode with:
 
 Reads the inforom from the flash file and verifys the checksum. If the
 inforom is corrupted the sensor is treated as a discrete sensor and
-a critical status is returned.
+a critical status is returned. If the inforom is OK "valid" is returned.
 
 =head1 DIAGNOSTICS
