@@ -539,6 +539,18 @@ sub get_throttle_reasons{
 		if($value ==  $nvmlClocksThrottleReasonUnknown){
 			return 'Unknown-slowdown'
 		}
+		if($value ==  $nvmlClocksThrottleReasonNone){
+			return 'None-slowdown'
+		}
+		if($value ==  $nvmlClocksThrottleReasonGpuIdle){
+			return 'GPUIdle-slowdown'
+		}
+		if($value ==  $nvmlClocksThrottleReasonUserDefinedClocks){
+			return 'UserClocks-slowdown'
+		}
+		if($value ==  $nvmlClocksThrottleReasonSwPowerCap){
+			return 'SWPWR-slowdown'
+		}
 	}
 	elsif($return == $NVML_ERROR_NOT_SUPPORTED){
 		return 'N/A';
