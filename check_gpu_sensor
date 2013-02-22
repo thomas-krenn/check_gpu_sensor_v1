@@ -330,6 +330,7 @@ sub get_verbose_string{
 	if($verbosity == 3){
 		$status_string .= "------------- begin of debug output (-vvv is set): ------------\n";
 		$status_string .= "Nvidia Driver Version: ".get_driver_version()."\n";
+		$status_string .= "Nvidia NVML Version: ".get_nvml_version()."\n";
 		$status_string .= "Number of GPUs in system: ".@DEVICE_LIST."\n";
 		foreach my $g (@DEVICE_LIST){
 			$status_string .= "\t-".$g->{'productName'}."\n";
@@ -928,17 +929,80 @@ Return a short usage message text how to call the plugin.
 
 =head2 get_help
 
-Get the help message text how to call the plugin.
+Get the help message text how to call the plugin. Also config parameters are
+described and how to use them.
 
 =head2 check_nvml_setup
 
 Checks if the nvml library can be found in any of the installation paths. 
 
+=head2 handle_error
+
+Checks the return values of the NVML function calls and propagates the error
+strings if any are present. If a feature is not supported 'N/A' is returned.
+
+=head2 print_hash
+
+Prints the keys and values of a hash. If every value of a hash is 'N/A' the
+whole hash is returned as 'N/A'.
+
+=head2 get_hash_values
+
+Returns a string containing all values and hashes. The method uses print_hash
+to get the nested hash values.
+
+=head2 get_status_string
+
+Form a status string with warning and critical sensor values followed by
+performance data with their corresponding thresholds.
+
+=head2 get_verbose_string
+
+Get a verbose string with version informations and all sensor values (also)
+with not supported 'N/A' sensors.
+
+=head2 check_hash_for_perf
+
+Checks a hash if it contains any numerical values to be displayed as
+performance data. EXCLUDE_LIST contains the hash keys that should not be
+displayed as performance values (device handles, device IDs).
+
+=head2 get_nvml_version
+
+Get the version of the installed NVML version.
+
+=head2 get_driver_version
+
+Get the version of the install NVIDIA driver.
+
+=head2 get_device_count
+
+Get the number of the current devices in the system.
+
+=head2 get_device_clock
+
+Get SM, graphics and memory clock.
+
+=head2 get_device_inforom
+
+Get the inforom version for OEM, ECC und Power.
+
+=head2 get_device_ecc
+
+Get device ECC error counters - aggregate counters for single bit, volatile
+counters for double bit. Single bit errors thresholds can be configured as it
+hard to define certain level where single bit errors really lead to a card
+error. Double bit errors are treated as discrete sensors, they directly lead
+to a critical status. Volatile counters are used as the counter are resetted
+on reboot, if the double bit errors are stille there afterwards the card may
+have some issues.
+
 =head2 get_device_power
 
-Retreives the device's power usage in watts. Calls nvmlDeviceGetPowerUsage and
-converts the return value (milliwatts) to watts. To set a power level with
-nvidia-smi use (administrator privileges reqired):
+Checks if the power management features are enabled and fetches the device's
+power usage in watts. Calls nvmlDeviceGetPowerUsage and converts the return
+value (milliwatts) to watts. To set a power level with nvidia-smi use
+(administrator privileges reqired):
 
 	$ sudo nvidia-smi -i ID -pl POWER_LIMIT
 	
@@ -948,7 +1012,7 @@ power limits execute:
 
 	$ nvidia-smi -i 0 -q -d POWER
 	
-Performance threasholds set via the plugin are independent from the
+Performance thresholds set via the plugin are independent from the
 nvidia-smi one's.'
 
 =head2 get_persistence_mode
