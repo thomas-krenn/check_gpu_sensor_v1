@@ -186,7 +186,7 @@ sub handle_error{
 	}
 	else{
 		if($return == $NVML_ERROR_NOT_SUPPORTED){
-			return $NVML_ERROR_NOT_SUPPORTED;	
+			return 'N/A';	
 		}
 		else{
 			return nvmlErrorString($return);
@@ -201,11 +201,11 @@ sub print_hash{
 	my $is_na = 1;
 	
 	foreach my $k (keys %{$hash_ref}) {
-		if($hash_ref->{$k} == $NVML_ERROR_NOT_SUPPORTED){
+		if($hash_ref->{$k} ne 'N/A'){
 			$is_na = 0;
 		}
 		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} == $NVML_ERROR_NOT_SUPPORTED){
+		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
 			next;
 		}
 		if(ref($hash_ref->{$k}) eq "SCALAR"){
@@ -217,7 +217,7 @@ sub print_hash{
 	}
 	#if all values are N/A, return this
 	if($is_na){
-		return $NVML_ERROR_NOT_SUPPORTED;
+		return 'N/A';
 	}
 	else{
 		return $string;
@@ -235,7 +235,7 @@ sub get_hash_values{
 			next;#we don't want to print driver handles
 		}
 		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} == $NVML_ERROR_NOT_SUPPORTED){
+		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
 			next;
 		}
 		#if we found a hash, call the print_hash function
@@ -243,9 +243,9 @@ sub get_hash_values{
 		#the string N/A assigned
 		if(ref($hash_ref->{$k}) eq 'HASH'){
 				my $hash_string = print_hash($hash_ref->{$k},$show_na);
-				if($hash_string == $NVML_ERROR_NOT_SUPPORTED){
+				if($hash_string eq 'N/A'){
 					if(defined $show_na){
-						$string .= "-$k: N/A\n";
+						$string .= "-$k: $hash_string\n";
 					}
 				}
 				else{
@@ -503,7 +503,7 @@ sub get_device_power{
 	my %power_hash;
 	my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
-	if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
+	if($return == $NVML_FEATURE_ENABLED){
 		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
 		$power_hash{'PWRUsage'} = handle_error($return,$value);
 		if($return == $NVML_SUCCESS){
@@ -754,7 +754,7 @@ sub check_discrete_sensors{
 	foreach my $k (keys %{$dev_data_ref->{'nvmlDeviceEccInfos'}}){
 		if($k =~ m/.*Dble/){
 			#skip N/A sensors	
-			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} == $NVML_ERROR_NOT_SUPPORTED){
+			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} eq 'N/A'){
 				next;
 			}
 			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
@@ -765,22 +765,23 @@ sub check_discrete_sensors{
 		}
 	}
 	#check if persistence mode is available and enabled
-	if(exists($dev_data_ref->{'persistenceMode'}) &&
-	$dev_data_ref->{'persistenceMode'} == $NVML_FEATURE_DISABLED){
-		#ensure to not drop an already Critical level
-		if($status_level[0] eq 'OK'){
-			$status_level[0] = "Warning";
+	if(exists($dev_data_ref->{'persistenceMode'}) && 
+		$dev_data_ref->{'persistenceMode'} ne 'N/A'){
+		if($dev_data_ref->{'persistenceMode'} == $NVML_FEATURE_DISABLED){
+			#ensure to not drop an already Critical level
+			if($status_level[0] eq 'OK'){
+				$status_level[0] = "Warning";
+			}
+			push(@{$status_level[1]},'persistenceMode');
 		}
-		push(@{$status_level[1]},'persistenceMode');
 	}
 	#check if inforom checksum is valid
 	if(exists($dev_data_ref->{'inforomValid'}) &&
-	$dev_data_ref->{'inforomValid'} == $NVML_ERROR_CORRUPTED_INFOROM){
-		#ensure to not drop an already Critical level
-		if($status_level[0] eq 'OK'){
+		$dev_data_ref->{'inforomValid'} ne 'N/A'){
+		if($dev_data_ref->{'inforomValid'} == $NVML_ERROR_CORRUPTED_INFOROM){
 			$status_level[0] = "Critical";
+			push(@{$status_level[2]},'inforomValid');
 		}
-		push(@{$status_level[2]},'inforomValid');
 	}
 	return \@status_level;
 }
