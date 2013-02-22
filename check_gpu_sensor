@@ -42,8 +42,8 @@ our %EXCLUDE_LIST = (
 	deviceHandle => '1',
 	deviceID => '1',
 	devicePCIBusID => '1',
-	nvmlDevicePciInfo => '1',
-	nvmlDeviceComputeMode => '1',
+	devicePciInfo => '1',
+	deviceComputeMode => '1',
 	PWRMgmtMode => '1',
 	OEMInforom => '1',
 	ECCInforom => '1',
@@ -61,9 +61,9 @@ our %EXCLUDE_LIST = (
 
 #warning and critical default threshold levels
 our %PERF_THRESHOLDS = (
-	nvmlGpuTemperature => ['85','100'], #Temperature
-	nvmlUsedMemory => ['95','99'], #Memory utilizaion
-	nvmlDeviceFanSpeed => ['80','95'], #Fan speed
+	GPUTemperature => ['85','100'], #Temperature
+	usedMemory => ['95','99'], #Memory utilizaion
+	fanSpeed => ['80','95'], #Fan speed
 	#only single ecc errors are configurable
 	#double ecc errors are treated as discrete sensors and issue
 	#a critical status
@@ -74,8 +74,8 @@ our %PERF_THRESHOLDS = (
 	ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
 	PWRUsage => ['150','200'],
 	#device utilization rates
-	gpuUtil => ['90','100'],
-	memUtil => ['90','100'],
+	GPUUtilRate => ['90','100'],
+	memUtilRate => ['90','100'],
 );
 
 ###############################################
@@ -116,23 +116,23 @@ sub get_help{
   [-T <sensor type>]
        limit sensors to query based on NVML sensor types.
        The sensors are currently only working for performance data sensors.
-       Examples for GPU sensor types are 'nvmlGpuTemperature',
-       'nvmlUsedMemory','nvmlDeviceFanSpeed'
+       Examples for GPU sensor types are 'GPUTemperature',
+       'usedMemory','fanSpeed'
        
   [-w <list of warning thresholds>]
        Change the default warning levels. The order of the levels
        is the following:
-       -nvmlGpuTemperature
-       -nvmlUsedMemory
-       -nvmlDeviceFanSpeed
+       -GPUTemperature
+       -usedMemory
+       -fanSpeed
        -ECCMemAggSgl
        -ECCL1AggSgl
        -ECCL2AggSgl
        -ECCRegAggSgl
        -ECCTexAggSgl
        -PWRUsage
-       -gpuUtil
-       -memUtil
+       -GPUUtilRate
+       -memUtilRate
        Levels that should stay default get a 'd' assigned.
        Example:
            check_gpu_sensor -w '75,d,d,d,d,d,d,d,d,d,d' 
@@ -560,8 +560,8 @@ sub get_device_util{
 	my ($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
 	my $ret_hash = handle_error($return,$value);
 	if($return == $NVML_SUCCESS){
-		$util_hash{'gpuUtil'} = $ret_hash->{'gpu'};
-		$util_hash{'memUtil'} = $ret_hash->{'memory'};
+		$util_hash{'GPUUtilRate'} = $ret_hash->{'gpu'};
+		$util_hash{'memUtilRate'} = $ret_hash->{'memory'};
 		return \%util_hash;
 	}
 	else{
@@ -578,16 +578,16 @@ sub get_device_status{
 	$current_device{'productName'} = (handle_error($return,$value));
 	
 	($return,$value) = nvmlDeviceGetComputeMode($current_device{'deviceHandle'});
-	$current_device{'nvmlDeviceComputeMode'} = (handle_error($return,$value));	
+	$current_device{'deviceComputeMode'} = (handle_error($return,$value));	
 	
 	($return,$value) = nvmlDeviceGetFanSpeed($current_device{'deviceHandle'});
-	$current_device{'nvmlDeviceFanSpeed'} = (handle_error($return,$value));
+	$current_device{'fanSpeed'} = (handle_error($return,$value));
 	
 	($return,$value) = nvmlDeviceGetTemperature($current_device{'deviceHandle'},$NVML_TEMPERATURE_GPU);
-	$current_device{'nvmlGpuTemperature'} = (handle_error($return,$value));
+	$current_device{'GPUTemperature'} = (handle_error($return,$value));
 		
 	($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
-	$current_device{'nvmlDevicePciInfo'} = (handle_error($return,$value));
+	$current_device{'devicePciInfo'} = (handle_error($return,$value));
 	
 	$current_device{'utilizationRates'} = get_device_util($current_ref);
 	
@@ -604,7 +604,7 @@ sub get_device_status{
 	$current_device{'nvmlDevicePowerInfos'} = $return;
 	
 	$return = get_device_memory($current_ref);
-	$current_device{'nvmlUsedMemory'} = $return;
+	$current_device{'usedMemory'} = $return;
 	
 	$current_device{'persistenceMode'} = get_persistence_mode($current_ref);
 	
@@ -700,17 +700,17 @@ sub check_perf_threshold{
 			#e.g. -w d,15,60 changes the warning level for sensor 2 and 3 but not for 1
 			if($warn_list[$i] ne 'd'){
 				switch($i){
-					case 0 {$PERF_THRESHOLDS{'nvmlGpuTemperature'}[0] = $warn_list[$i]};
-					case 1 {$PERF_THRESHOLDS{'nvmlUsedMemory'}[0] = $warn_list[$i]};
-					case 2 {$PERF_THRESHOLDS{'nvmlDeviceFanSpeed'}[0] = $warn_list[$i]};
+					case 0 {$PERF_THRESHOLDS{'GPUTemperature'}[0] = $warn_list[$i]};
+					case 1 {$PERF_THRESHOLDS{'usedMemory'}[0] = $warn_list[$i]};
+					case 2 {$PERF_THRESHOLDS{'fanSpeed'}[0] = $warn_list[$i]};
 					case 3 {$PERF_THRESHOLDS{'ECCMemAggSgl'}[0] = $warn_list[$i]};
 					case 4 {$PERF_THRESHOLDS{'ECCL1AggSgl'}[0] = $warn_list[$i]};
 					case 5 {$PERF_THRESHOLDS{'ECCL2AggSgl'}[0] = $warn_list[$i]};
 					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i]};
 					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i]};
 					case 8 {$PERF_THRESHOLDS{'PWRUsage'}[0] = $warn_list[$i]};
-					case 9 {$PERF_THRESHOLDS{'gpuUtil'}[0] = $warn_list[$i]};
-					case 10 {$PERF_THRESHOLDS{'memUtil'}[0] = $warn_list[$i]};
+					case 9 {$PERF_THRESHOLDS{'GPUUtilRate'}[0] = $warn_list[$i]};
+					case 10 {$PERF_THRESHOLDS{'memUtilRate'}[0] = $warn_list[$i]};
 				}
 			}		
 		}			
@@ -720,17 +720,17 @@ sub check_perf_threshold{
 		for ($i = 0; $i < @crit_list; $i++){
 			if($crit_list[$i] ne 'd'){
 				switch($i){
-					case 0 {$PERF_THRESHOLDS{'nvmlGpuTemperature'}[1] = $crit_list[$i]};
-					case 1 {$PERF_THRESHOLDS{'nvmlUsedMemory'}[1] = $crit_list[$i]};
-					case 2 {$PERF_THRESHOLDS{'nvmlDeviceFanSpeed'}[1] = $crit_list[$i]};
+					case 0 {$PERF_THRESHOLDS{'GPUTemperature'}[1] = $crit_list[$i]};
+					case 1 {$PERF_THRESHOLDS{'usedMemory'}[1] = $crit_list[$i]};
+					case 2 {$PERF_THRESHOLDS{'fanSpeed'}[1] = $crit_list[$i]};
 					case 3 {$PERF_THRESHOLDS{'ECCMemAggSgl'}[1] = $crit_list[$i]};
 					case 4 {$PERF_THRESHOLDS{'ECCL1AggSgl'}[1] = $crit_list[$i]};
 					case 5 {$PERF_THRESHOLDS{'ECCL2AggSgl'}[1] = $crit_list[$i]};
 					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i]};
 					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i]};
 					case 8 {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i]};
-					case 9 {$PERF_THRESHOLDS{'gpuUtil'}[1] = $crit_list[$i]};
-					case 10 {$PERF_THRESHOLDS{'memUtil'}[1] = $crit_list[$i]};
+					case 9 {$PERF_THRESHOLDS{'GPUUtilRate'}[1] = $crit_list[$i]};
+					case 10 {$PERF_THRESHOLDS{'memUtilRate'}[1] = $crit_list[$i]};
 				}
 			}		
 		}			
@@ -919,9 +919,9 @@ Example:
 
 	$ ./check_gpu_sensor -db '0000:83:00.0'
 	OK - Tesla K20c |ECCL2AggSgl=0;1;2; ECCTexAggSgl=0;1;2; PWRUsage=31.43;150;200;
-	ECCRegAggSgl=0;1;2; SMClock=705 ECCL1AggSgl=0;1;2; nvmlUsedMemory=0.24;95;99;
-	nvmlDeviceFanSpeed=30;80;95; memClock=2600 gpu=25 memory=1 graphicsClock=705
-	nvmlGpuTemperature=36;85;100; ECCMemAggSgl=0;1;2;
+	ECCRegAggSgl=0;1;2; SMClock=705 ECCL1AggSgl=0;1;2; usedMemory=0.24;95;99;
+	fanSpeed=30;80;95; memClock=2600 GPUUtilRate=25 memUtilRate=1 graphicsClock=705
+	GPUTemperature=36;85;100; ECCMemAggSgl=0;1;2;
 	
 =head1 DESCRIPTION
 
