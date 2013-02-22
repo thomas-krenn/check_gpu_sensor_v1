@@ -388,12 +388,12 @@ sub read_config{
 }
 
 sub configure_thresholds{
-	my %config = %{(shift)};
+	my $config = shift;
 	foreach my $k (keys %PERF_THRESHOLDS){
 		#the key is present in the config
-		if(exists($config{$k})){
+		if(exists($config->{$k})){
 			#split the given values
-			my @threshs = split(/,/,$config{$k});
+			my @threshs = split(/,/,$config->{$k});
 			$threshs[0] =~ s/ //g;
 			$threshs[1] =~ s/ //g;
 			$PERF_THRESHOLDS{$k}[0] = $threshs[0];
@@ -940,8 +940,8 @@ MAIN: {
 	
 	#Read a given config an change thresholds
 	if($config_file){
-		my %conf = read_config($config_file);
-		configure_thresholds($conf{'thresholds'});
+		my $conf = read_config($config_file);
+		configure_thresholds($conf->{'thresholds'});
 	}
 	
 	#TODO Is the sensor list only for performance data valid?
