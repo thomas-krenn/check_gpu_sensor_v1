@@ -509,15 +509,20 @@ sub get_device_power{
 	my %power_hash;
 	my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
-	if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
-		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
-		$power_hash{'PWRUsage'} = handle_error($return,$value);
-		if($return == $NVML_SUCCESS){
-			#convert mW to W
-			$power_hash{'PWRUsage'} /= 1000;
-		}
+	if($power_hash{'PWRMgmtMode'} eq 'N/A'){
+		return \%power_hash;
 	}
-	return \%power_hash;
+	else{
+		if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
+			($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
+			$power_hash{'PWRUsage'} = handle_error($return,$value);
+			if($return == $NVML_SUCCESS){
+				#convert mW to W
+				$power_hash{'PWRUsage'} /= 1000;
+			}
+		}
+		return \%power_hash;
+	}
 }
 
 sub get_persistence_mode{
@@ -762,6 +767,10 @@ sub check_discrete_sensors{
 	#check for double ecc errors
 	foreach my $k (keys %{$dev_data_ref->{'nvmlDeviceEccInfos'}}){
 		if($k =~ m/.*Dble/){
+			#skip N/A sensors	
+			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} eq 'N/A'){
+				next;
+			}
 			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
 				$status_level[0] = "Critical";
 				#add key to critical array
