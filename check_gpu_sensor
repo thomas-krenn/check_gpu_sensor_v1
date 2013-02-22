@@ -93,7 +93,7 @@ NVML version ".get_nvml_version();
 sub get_usage{
 	return "Usage:
 check_gpu_sensor -db <pci bus string> | -d <device id> | [-T <sensor type>] [-w <list of warn levels>]
-[-c <list of crit levels>] [-v|-vv|-vvv] [-h] [-V] [--show-na]"
+[-c <list of crit levels>] [-cf <config file path>] [-v|-vv|-vvv] [-h] [-V] [--show-na]"
 }
 sub get_help{
 	return "
@@ -117,7 +117,8 @@ sub get_help{
        'usedMemory','fanSpeed'
        
   [-w <list of warning thresholds>]
-       Change the default warning levels. The order of the levels
+       Change the default warning levels (also consider to use a config file
+       instead ('-cf'). The order of the levels
        is the following:
        -GPUTemperature
        -usedMemory
@@ -140,13 +141,18 @@ sub get_help{
        Levels that should stay default get a 'd' assigned.
        Example:
            check_gpu_sensor -c '100,d,d,d,d,d,d,d,d,d,d' 
-       This changes the critical level for the temperature.  		
+       This changes the critical level for the temperature.
+  [-cf <config file path>]
+       Instead of specifying the thresholds via '-w/-c' you can define perfdata
+       thresholds in a config file. For valid sensor names compare to the
+       given sensors above (from '-w' option).
   [-v <Verbose Level>]
        be verbose
          (no -v) .. single line output
          -v ..... single line output with additional details for warnings
          -vv ..... multi line output, also with additional details for warnings
-         -vvv ..... normal output, then debugging output, followed by normal multi line output
+         -vvv ..... normal output, then debugging output, followed by normal
+              multi line output
   [-h]
        show this help
   [-V]
@@ -1041,6 +1047,15 @@ with not supported 'N/A' sensors.
 Checks a hash if it contains any numerical values to be displayed as
 performance data. EXCLUDE_LIST contains the hash keys that should not be
 displayed as performance values (device handles, device IDs).
+
+=head2 read_config
+
+Reads out the given config file, that can be used to define performance data
+thresholds. To have a valid section in ini-style config use 'thresholds' as
+section. Example:
+
+	[thresholds]
+	GPUTemperature = 90, 105
 
 =head2 get_nvml_version
 
