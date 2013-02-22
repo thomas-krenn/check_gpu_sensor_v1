@@ -503,8 +503,8 @@ sub get_persistence_mode{
 
 sub get_inforom_validation{
 	my %current_device = %{(shift)};
-	my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
-	return $return;
+	my ($return,$value) = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
+	return handle_error($return,$value);
 }
 
 sub get_device_memory{
