@@ -765,7 +765,7 @@ sub check_discrete_sensors{
 	#check if persistence mode is available and enabled
 	if(exists($dev_data_ref->{'persistenceMode'}) && 
 		$dev_data_ref->{'persistenceMode'} ne 'N/A'){
-		if($dev_data_ref->{'persistenceMode'} eq 'disabled'){
+		if($dev_data_ref->{'persistenceMode'} ne 'enabled'){
 			#ensure to not drop an already Critical level
 			if($status_level[0] eq 'OK'){
 				$status_level[0] = "Warning";
