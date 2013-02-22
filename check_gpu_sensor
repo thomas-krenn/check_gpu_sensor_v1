@@ -153,9 +153,8 @@ sub get_help{
        show sensors with value equal to N/A (means not available)";
 }
 
-
 sub check_nvml_setup{
-	#TODO Check for locations of nvml library
+	#TODO Check for more locations of nvml library
 	my $return = '';
 	if(!(-e "/usr/lib32/libnvidia-ml.so") &&
 		!(-e "/usr/lib32/nvidia-current/libnvidia-ml.so") &&
@@ -333,7 +332,6 @@ sub get_verbose_string{
 	}
 	return $status_string;
 }
-
 
 sub check_hash_for_perf{
 	my %hash = %{(shift)};
@@ -636,7 +634,7 @@ sub get_device_status{
 }
 ###############################################
 # Overall device functions 
-# They collect functions for a in the current system
+# They collect functions for a GPU in the current system
 ###############################################
 sub get_all_device_status{
 	my $device_id = shift;
@@ -933,7 +931,7 @@ __END__
 
 =head1 NAME
 
-check_gpu_sensor - A NVIDIA nvml plugin to check gpu sensors.
+check_gpu_sensor - A NVIDIA NVML Nagios/Icinga plugin to check gpu sensors.
 
 =head1 SYNOPSIS
 
@@ -1022,10 +1020,10 @@ Get the inforom version for OEM, ECC und Power.
 
 Get device ECC error counters - aggregate counters for single bit, volatile
 counters for double bit. Single bit errors thresholds can be configured as it
-hard to define certain level where single bit errors really lead to a card
+is hard to define a certain level where single bit errors really lead to a card
 error. Double bit errors are treated as discrete sensors, they directly lead
-to a critical status. Volatile counters are used as the counter are resetted
-on reboot, if the double bit errors are stille there afterwards the card may
+to a critical status. Volatile counters are used as the counters are resetted
+on reboot, if the double bit errors are still there afterwards the card may
 have some issues.
 
 =head2 get_device_power
@@ -1049,8 +1047,8 @@ nvidia-smi one's.'
 =head2 get_persistence_mode
 
 Gets the device's persistence mode setting (due to nvidia-smi documentation
-only on Linux available. If the setting is available it later on checks if
-the mode is enabled. As it more convenient to use the persistence mode a
+only on Linux available). If the setting is available it later on checks if
+the mode is enabled. As it is more convenient to use the persistence mode a
 Warning status is triggered if the persistence mode is not enabled. Enable
 the mode with:
 
@@ -1062,4 +1060,96 @@ Reads the inforom from the flash file and verifys the checksum. If the
 inforom is corrupted the sensor is treated as a discrete sensor and
 a critical status is returned. If the inforom is OK "valid" is returned.
 
+=head2 get_throttle_reasons
+
+Retrieve current clock throttle reasons. For the throttle reasons "HWSlowdown"
+and "ReasonUnknown" the sensor is treated as discrete and a Critical status
+is returned. For throttle reasons idle, user defined clocks, sw power caps and
+none no Critical status is triggered.
+
+=head2 get_device_memory
+
+Get the device memory usage in percentage of the total available memory.
+
+=head2 get_device_util
+
+Get the device utilization rates for memory and GPU.
+
+=head2 get_device_status
+
+Call all device related sensor functions. Currently this includes:
+
+	-Device Name		-Clock infos
+	-Comupte mode		-Inforom infos
+	-FanSpeed		-ECC error counters
+	-Temperature		-Power usage
+	-PCI infos		-Memory usage
+	-Device Utilization	-Persistence Mode
+	-Inforom validation	-Throttle reasons
+
+=head2 get_all_device_status
+
+Checks if a GPU with the defined identifier is available. Then fetches
+a device handle and calls get_device_status to retreive the status value
+of the desired GPU.
+
+=head2 collect_perf_data
+
+Parses the device hashes of a device and collects the perf data (only numeric values)
+into arrays. Uses check_hash_for_perf to find the performance values.
+
+=head2 check_perf_threshold
+
+Checks if the given performance data is in its ranges. For the performance values
+that are not in their thresholds two arrays are created: one for the warning and
+one for the critical sensors. If one sensor is critical it is removed from the
+warning array, so that is it not double displayed.
+
+=head2 check_discrete_sensors
+
+Checks if the discrete sensors are present and have a certain value. Currently
+these are:
+
+	-Double ECC errors
+	-Persistence mode
+	-Inforom checksum
+	-Throttle reasons (HW and unknown slowdown)
+
 =head1 DIAGNOSTICS
+
+=over
+
+=item C<< Error: No NVIDIA device found in current system. >>
+
+The NVML device count function returned 0.
+
+=item C<< Error: Cannot get handle for device bus ID: >>
+
+nvmlDeviceGetHandleByPciBusId returned an error.
+
+=item C<< Error: Cannot get handle for device: >>
+
+nvmlDeviceGetHandleByIndex returned an error.
+
+=item C<< Debug: Nvml setup check failed. >>
+
+Checking for the libnvidia-ml library in the given paths did not return a success.
+
+=item C<< Debug: NVML initialization failed. >>
+
+The call to nvmlInit returned an error and failed.
+
+=item C<< Error: Valid PCI bus string or device ID is required. >>
+
+A device identifier (device id or pci bus id) must be specified to know the
+Gpu whose sensors should be checked.
+
+=item C<< Ensure to use a valid device id or device bus string. >>
+
+For the given device identifier a valid device handle could not be created.
+
+=item C<< Debug: NVML shutdown failed. >>
+
+NVML did not shutdown correctly.
+
+=back
