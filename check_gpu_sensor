@@ -529,6 +529,25 @@ sub get_inforom_validation{
 	}
 }
 
+sub get_throttle_reasons{
+	my %current_device = %{(shift)};
+	my ($return,$value) = nvmlDeviceGetCurrentClocksThrottleReasons($current_device{'deviceHandle'});
+	if($return == $NVML_SUCCESS){
+		if($value ==  $nvmlClocksThrottleReasonHwSlowdown){
+			return 'HW-slowdown'
+		}
+		if($value ==  $nvmlClocksThrottleReasonUnknown){
+			return 'Unknown-slowdown'
+		}
+	}
+	elsif($return == $NVML_ERROR_NOT_SUPPORTED){
+		return 'N/A';
+	}
+	else{
+		return nvmlErrorString($return);
+	}
+}
+
 sub get_device_memory{
 	my %current_device = %{(shift)};
 	my $used_memory;
@@ -598,6 +617,8 @@ sub get_device_status{
 	$current_device{'persistenceMode'} = get_persistence_mode($current_ref);
 	
 	$current_device{'inforomValid'} = get_inforom_validation($current_ref);
+	
+	$current_device{'throttleReasons'} = get_throttle_reasons($current_ref);
 	
 	return \%current_device;
 }
@@ -779,6 +800,15 @@ sub check_discrete_sensors{
 		if($dev_data_ref->{'inforomValid'} ne 'valid'){
 			$status_level[0] = "Critical";
 			push(@{$status_level[2]},'inforomValid');
+		}
+	}
+	#check if we have a hardware throttle
+	if(exists($dev_data_ref->{'throttleReasons'}) &&
+		$dev_data_ref->{'throttleReasons'} ne 'N/A'){
+		if($dev_data_ref->{'throttleReasons'} eq 'HW-slowdown' ||
+			$dev_data_ref->{'throttleReasons'} eq 'Unknown-slowdown'){
+			$status_level[0] = "Critical";
+			push(@{$status_level[2]},'throttleReasons');
 		}
 	}
 	return \@status_level;
