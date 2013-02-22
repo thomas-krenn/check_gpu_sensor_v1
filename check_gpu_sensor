@@ -178,28 +178,22 @@ sub check_nvml_setup{
 # They check for errors and print several structs
 # They also generate status outputs and verbose information
 ###############################################
-
-# Checking for errors returned by the nvml library
-# If a functionality is not supported "N/A" is returned
 sub handle_error{
 	my $return = $_[0];
 	my $value = $_[1];
-	my $is_hash = $_[2];
 	if($return == $NVML_SUCCESS){
 		return $value;	
 	}
 	else{
 		if($return == $NVML_ERROR_NOT_SUPPORTED){
-			return 'N/A';	
+			return $NVML_ERROR_NOT_SUPPORTED;	
 		}
 		else{
 			return nvmlErrorString($return);
 		}
 	}	
 }
-#Prints all values of a given hash
-#If every value of the hash is N/A, the string
-#N/A is returned
+
 sub print_hash{
 	my $hash_ref = shift;
 	my $show_na = shift;
@@ -207,11 +201,11 @@ sub print_hash{
 	my $is_na = 1;
 	
 	foreach my $k (keys %{$hash_ref}) {
-		if($hash_ref->{$k} ne 'N/A'){
+		if($hash_ref->{$k} == $NVML_ERROR_NOT_SUPPORTED){
 			$is_na = 0;
 		}
 		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
+		if(!(defined $show_na) && $hash_ref->{$k} == $NVML_ERROR_NOT_SUPPORTED){
 			next;
 		}
 		if(ref($hash_ref->{$k}) eq "SCALAR"){
@@ -223,7 +217,7 @@ sub print_hash{
 	}
 	#if all values are N/A, return this
 	if($is_na){
-		return 'N/A';
+		return $NVML_ERROR_NOT_SUPPORTED;
 	}
 	else{
 		return $string;
@@ -241,7 +235,7 @@ sub get_hash_values{
 			next;#we don't want to print driver handles
 		}
 		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
+		if(!(defined $show_na) && $hash_ref->{$k} == $NVML_ERROR_NOT_SUPPORTED){
 			next;
 		}
 		#if we found a hash, call the print_hash function
@@ -249,9 +243,9 @@ sub get_hash_values{
 		#the string N/A assigned
 		if(ref($hash_ref->{$k}) eq 'HASH'){
 				my $hash_string = print_hash($hash_ref->{$k},$show_na);
-				if($hash_string eq 'N/A'){
+				if($hash_string == $NVML_ERROR_NOT_SUPPORTED){
 					if(defined $show_na){
-						$string .= "-$k: $hash_string\n";
+						$string .= "-$k: N/A\n";
 					}
 				}
 				else{
@@ -509,20 +503,15 @@ sub get_device_power{
 	my %power_hash;
 	my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
 	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
-	if($power_hash{'PWRMgmtMode'} eq 'N/A'){
-		return \%power_hash;
-	}
-	else{
-		if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
-			($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
-			$power_hash{'PWRUsage'} = handle_error($return,$value);
-			if($return == $NVML_SUCCESS){
-				#convert mW to W
-				$power_hash{'PWRUsage'} /= 1000;
-			}
+	if($power_hash{'PWRMgmtMode'} == $NVML_FEATURE_ENABLED){
+		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
+		$power_hash{'PWRUsage'} = handle_error($return,$value);
+		if($return == $NVML_SUCCESS){
+			#convert mW to W
+			$power_hash{'PWRUsage'} /= 1000;
 		}
-		return \%power_hash;
 	}
+	return \%power_hash;
 }
 
 sub get_persistence_mode{
@@ -534,9 +523,6 @@ sub get_persistence_mode{
 sub get_inforom_validation{
 	my %current_device = %{(shift)};
 	my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
-	if ($return == $NVML_ERROR_NOT_SUPPORTED){
-		$return = 'N/A';
-	}
 	return $return;
 }
 
@@ -768,7 +754,7 @@ sub check_discrete_sensors{
 	foreach my $k (keys %{$dev_data_ref->{'nvmlDeviceEccInfos'}}){
 		if($k =~ m/.*Dble/){
 			#skip N/A sensors	
-			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} eq 'N/A'){
+			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} == $NVML_ERROR_NOT_SUPPORTED){
 				next;
 			}
 			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
