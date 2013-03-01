@@ -77,6 +77,10 @@ our %PERF_THRESHOLDS = (
 	#device utilization rates
 	GPUUtilRate => ['90','100'],
 	memUtilRate => ['90','100'],
+	#device clocks
+	graphicsClock => ['400','450'],
+	SMClock => ['800','1000'],
+	memClock => ['1200','1350'],
 );
 
 ###############################################
@@ -145,7 +149,8 @@ sub get_help{
   [-cf <config file path>]
        Instead of specifying the thresholds via '-w/-c' you can define perfdata
        thresholds in a config file. For valid sensor names compare to the
-       given sensors above (from '-w' option).
+       given sensors above (from '-w' option). The sensors must be placed in a 
+       [thresholds] section.
   [-v <Verbose Level>]
        be verbose
          (no -v) .. single line output
@@ -450,11 +455,30 @@ sub get_device_clock{
 	my ($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
 	$clock_hash{'graphicsClock'} = handle_error($return,$value);
 	
+	($return,$value) = nvmlDeviceGetMaxClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
+	#per default we use 90% and 95% of the max clock values as warning/critical
+	if($return == $NVML_SUCCESS){
+		$PERF_THRESHOLDS{'graphicsClock'}[0] = $value * 0.9;
+		$PERF_THRESHOLDS{'graphicsClock'}[1] = $value * 0.95;
+	}
+	
 	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_SM);
 	$clock_hash{'SMClock'} = handle_error($return,$value);
 	
+	($return,$value) = nvmlDeviceGetMaxClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_SM);
+	if($return == $NVML_SUCCESS){
+		$PERF_THRESHOLDS{'SMClock'}[0] = $value * 0.9;
+		$PERF_THRESHOLDS{'SMClock'}[1] = $value * 0.95;
+	}
+	
 	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_MEM);
 	$clock_hash{'memClock'} = handle_error($return,$value);
+	
+	($return,$value) = nvmlDeviceGetMaxClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_MEM);
+	if($return == $NVML_SUCCESS){
+		$PERF_THRESHOLDS{'memClock'}[0] = $value * 0.9;
+		$PERF_THRESHOLDS{'memClock'}[1] = $value * 0.95;
+	}
 	
 	return \%clock_hash;
 }
@@ -944,7 +968,7 @@ MAIN: {
 		exit(3);
 	}
 	
-	#Read a given config an change thresholds
+	#Read a given config and change thresholds
 	if($config_file){
 		my $conf = read_config($config_file);
 		configure_thresholds($conf->{'thresholds'});
