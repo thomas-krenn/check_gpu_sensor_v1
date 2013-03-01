@@ -160,10 +160,10 @@ sub get_help{
 sub check_nvml_setup{
 	#TODO Check for more locations of nvml library
 	my $return = '';
-	if(!(-e "/usr/lib32/libnvidia-ml.so") &&
-		!(-e "/usr/lib32/nvidia-current/libnvidia-ml.so") &&
-		!(-e "/usr/lib/nvidia-current/libnvidia-ml.so") &&
-		!(-e "/usr/lib/libnvidia-ml.so")){
+	eval{
+		require nvidia::ml;
+	};
+	if($@){
 		return (1,"Nvml library not found on system");
 	}
 	else{
