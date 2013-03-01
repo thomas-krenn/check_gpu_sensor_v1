@@ -124,7 +124,7 @@
 .\" ========================================================================
 .\"
 .IX Title "CHECK_GPU_SENSOR 1"
-.TH CHECK_GPU_SENSOR 1 "2013-02-22" "perl v5.14.2" "User Contributed Perl Documentation"
+.TH CHECK_GPU_SENSOR 1 "2013-03-01" "perl v5.14.2" "User Contributed Perl Documentation"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -185,6 +185,16 @@ with not supported 'N/A' sensors.
 Checks a hash if it contains any numerical values to be displayed as
 performance data. \s-1EXCLUDE_LIST\s0 contains the hash keys that should not be
 displayed as performance values (device handles, device IDs).
+.SS "read_config"
+.IX Subsection "read_config"
+Reads out the given config file, that can be used to define performance data
+thresholds. To have a valid section in ini-style config use 'thresholds' as
+section. Example:
+.PP
+.Vb 2
+\&        [thresholds]
+\&        GPUTemperature = 90, 105
+.Ve
 .SS "get_nvml_version"
 .IX Subsection "get_nvml_version"
 Get the version of the installed \s-1NVML\s0 version.
@@ -328,3 +338,59 @@ Gpu whose sensors should be checked.
 .el .IP "\f(CWEnsure to use a valid device id or device bus string.\fR" 4
 .IX Item "Ensure to use a valid device id or device bus string."
 For the given device identifier a valid device handle could not be created.
+.ie n .IP """Debug: NVML shutdown failed.""" 4
+.el .IP "\f(CWDebug: NVML shutdown failed.\fR" 4
+.IX Item "Debug: NVML shutdown failed."
+\&\s-1NVML\s0 did not shutdown correctly.
+.ie n .IP """Error: Cannot use empty config path or empty section.""" 4
+.el .IP "\f(CWError: Cannot use empty config path or empty section.\fR" 4
+.IX Item "Error: Cannot use empty config path or empty section."
+The given config path is empty.
+.ie n .IP """Error: Could not read given config.""" 4
+.el .IP "\f(CWError: Could not read given config.\fR" 4
+.IX Item "Error: Could not read given config."
+Config::IniFiles returned an error while reading the config.
+.SH "DEPENDENCIES"
+.IX Header "DEPENDENCIES"
+.Vb 6
+\&        use strict;
+\&        use warnings;
+\&        use nvidia::ml qw(:all);
+\&        use Getopt::Long qw(:config no_ignore_case);
+\&        use Switch;
+\&        use Config::IniFiles;
+.Ve
+.SH "AUTHOR"
+.IX Header "AUTHOR"
+Georg SchA\*~Xnberger  \f(CW\*(C`<gschoenberger@thomas\-krenn.com>\*(C'\fR
+.SH "LICENCE AND COPYRIGHT"
+.IX Header "LICENCE AND COPYRIGHT"
+Copyright (c) 2012, Georg SchA\*~Xnberger \f(CW\*(C`<gschoenberger@thomas\-krenn.com>\*(C'\fR.
+All rights reserved.
+.PP
+This program is free software; you can redistribute it and/or modify it under
+the terms of the \s-1GNU\s0 General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
+.SH "DISCLAIMER OF WARRANTY"
+.IX Header "DISCLAIMER OF WARRANTY"
+\&\s-1BECAUSE\s0 \s-1THIS\s0 \s-1SOFTWARE\s0 \s-1IS\s0 \s-1LICENSED\s0 \s-1FREE\s0 \s-1OF\s0 \s-1CHARGE\s0, \s-1THERE\s0 \s-1IS\s0 \s-1NO\s0 \s-1WARRANTY\s0
+\&\s-1FOR\s0 \s-1THE\s0 \s-1SOFTWARE\s0, \s-1TO\s0 \s-1THE\s0 \s-1EXTENT\s0 \s-1PERMITTED\s0 \s-1BY\s0 \s-1APPLICABLE\s0 \s-1LAW\s0. \s-1EXCEPT\s0 \s-1WHEN\s0
+\&\s-1OTHERWISE\s0 \s-1STATED\s0 \s-1IN\s0 \s-1WRITING\s0 \s-1THE\s0 \s-1COPYRIGHT\s0 \s-1HOLDERS\s0 \s-1AND/OR\s0 \s-1OTHER\s0 \s-1PARTIES\s0
+\&\s-1PROVIDE\s0 \s-1THE\s0 \s-1SOFTWARE\s0 \*(L"\s-1AS\s0 \s-1IS\s0\*(R" \s-1WITHOUT\s0 \s-1WARRANTY\s0 \s-1OF\s0 \s-1ANY\s0 \s-1KIND\s0, \s-1EITHER\s0
+\&\s-1EXPRESSED\s0 \s-1OR\s0 \s-1IMPLIED\s0, \s-1INCLUDING\s0, \s-1BUT\s0 \s-1NOT\s0 \s-1LIMITED\s0 \s-1TO\s0, \s-1THE\s0 \s-1IMPLIED\s0
+\&\s-1WARRANTIES\s0 \s-1OF\s0 \s-1MERCHANTABILITY\s0 \s-1AND\s0 \s-1FITNESS\s0 \s-1FOR\s0 A \s-1PARTICULAR\s0 \s-1PURPOSE\s0. \s-1THE\s0
+\&\s-1ENTIRE\s0 \s-1RISK\s0 \s-1AS\s0 \s-1TO\s0 \s-1THE\s0 \s-1QUALITY\s0 \s-1AND\s0 \s-1PERFORMANCE\s0 \s-1OF\s0 \s-1THE\s0 \s-1SOFTWARE\s0 \s-1IS\s0 \s-1WITH\s0
+\&\s-1YOU\s0. \s-1SHOULD\s0 \s-1THE\s0 \s-1SOFTWARE\s0 \s-1PROVE\s0 \s-1DEFECTIVE\s0, \s-1YOU\s0 \s-1ASSUME\s0 \s-1THE\s0 \s-1COST\s0 \s-1OF\s0 \s-1ALL\s0
+\&\s-1NECESSARY\s0 \s-1SERVICING\s0, \s-1REPAIR\s0, \s-1OR\s0 \s-1CORRECTION\s0.
+.PP
+\&\s-1IN\s0 \s-1NO\s0 \s-1EVENT\s0 \s-1UNLESS\s0 \s-1REQUIRED\s0 \s-1BY\s0 \s-1APPLICABLE\s0 \s-1LAW\s0 \s-1OR\s0 \s-1AGREED\s0 \s-1TO\s0 \s-1IN\s0 \s-1WRITING\s0
+\&\s-1WILL\s0 \s-1ANY\s0 \s-1COPYRIGHT\s0 \s-1HOLDER\s0, \s-1OR\s0 \s-1ANY\s0 \s-1OTHER\s0 \s-1PARTY\s0 \s-1WHO\s0 \s-1MAY\s0 \s-1MODIFY\s0 \s-1AND/OR\s0
+\&\s-1REDISTRIBUTE\s0 \s-1THE\s0 \s-1SOFTWARE\s0 \s-1AS\s0 \s-1PERMITTED\s0 \s-1BY\s0 \s-1THE\s0 \s-1ABOVE\s0 \s-1LICENCE\s0, \s-1BE\s0
+\&\s-1LIABLE\s0 \s-1TO\s0 \s-1YOU\s0 \s-1FOR\s0 \s-1DAMAGES\s0, \s-1INCLUDING\s0 \s-1ANY\s0 \s-1GENERAL\s0, \s-1SPECIAL\s0, \s-1INCIDENTAL\s0,
+\&\s-1OR\s0 \s-1CONSEQUENTIAL\s0 \s-1DAMAGES\s0 \s-1ARISING\s0 \s-1OUT\s0 \s-1OF\s0 \s-1THE\s0 \s-1USE\s0 \s-1OR\s0 \s-1INABILITY\s0 \s-1TO\s0 \s-1USE\s0
+\&\s-1THE\s0 \s-1SOFTWARE\s0 (\s-1INCLUDING\s0 \s-1BUT\s0 \s-1NOT\s0 \s-1LIMITED\s0 \s-1TO\s0 \s-1LOSS\s0 \s-1OF\s0 \s-1DATA\s0 \s-1OR\s0 \s-1DATA\s0 \s-1BEING\s0
+\&\s-1RENDERED\s0 \s-1INACCURATE\s0 \s-1OR\s0 \s-1LOSSES\s0 \s-1SUSTAINED\s0 \s-1BY\s0 \s-1YOU\s0 \s-1OR\s0 \s-1THIRD\s0 \s-1PARTIES\s0 \s-1OR\s0 A
+\&\s-1FAILURE\s0 \s-1OF\s0 \s-1THE\s0 \s-1SOFTWARE\s0 \s-1TO\s0 \s-1OPERATE\s0 \s-1WITH\s0 \s-1ANY\s0 \s-1OTHER\s0 \s-1SOFTWARE\s0), \s-1EVEN\s0 \s-1IF\s0
+\&\s-1SUCH\s0 \s-1HOLDER\s0 \s-1OR\s0 \s-1OTHER\s0 \s-1PARTY\s0 \s-1HAS\s0 \s-1BEEN\s0 \s-1ADVISED\s0 \s-1OF\s0 \s-1THE\s0 \s-1POSSIBILITY\s0 \s-1OF\s0
+\&\s-1SUCH\s0 \s-1DAMAGES\s0.
