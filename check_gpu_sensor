@@ -26,11 +26,19 @@
 
 use strict;
 use warnings;
-use nvidia::ml qw(:all);
 use Getopt::Long qw(:config no_ignore_case);#case sensitive
 use Switch;
 use Config::IniFiles;
 
+BEGIN{
+	eval{
+		require nvidia::ml;
+		nvidia::ml->import(qw(:all));
+	};
+	if($@){
+		die "Nvml library not found on system";
+	}
+}
 ###############################################
 # Global Variables in the current scope
 ###############################################
@@ -157,18 +165,6 @@ sub get_help{
        show sensors with value equal to N/A (means not available)";
 }
 
-sub check_nvml_setup{
-	my $return = '';
-	eval{
-		require nvidia::ml;
-	};
-	if($@){
-		return (1,"Nvml library not found on system");
-	}
-	else{
-		return 0;
-	}
-}
 ###############################################
 # Helper functions 
 # They check for errors and print several structs
@@ -882,15 +878,8 @@ MAIN: {
 	my $device_id = -1;#the desired gpu device to query
 	my $device_bus = '';#device bus information
 	
-	#Check for nvml installation
-	my ($result,$errString) = check_nvml_setup();
-	if($result){
-		print "Debug: Nvml setup check failed.\n";
-		print "Error: ".$errString.".\n";
-		exit(3);
-	}
 	#Initialize nvml library
-	$result = nvmlInit();
+	my $result = nvmlInit();
 	if($result != $NVML_SUCCESS){
 		print "Debug: NVML initialization failed.\n";
 		print "Error: ".nvmlErrorString($result).".\n";
