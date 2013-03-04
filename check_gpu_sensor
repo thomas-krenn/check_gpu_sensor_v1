@@ -595,6 +595,7 @@ sub get_throttle_reasons{
 			#none of the cases matched, an unknown throttle is active
 			$throttle_hash{'clocks_throttle_reason_unknown'} = 1;
 		}
+		return \%throttle_hash;
 	}
 	if($return == $NVML_ERROR_NOT_SUPPORTED){
 		return 'N/A';
@@ -602,7 +603,6 @@ sub get_throttle_reasons{
 	else{
 		return nvmlErrorString($return);
 	}
-	return \%throttle_hash;
 }
 
 sub get_device_memory{
