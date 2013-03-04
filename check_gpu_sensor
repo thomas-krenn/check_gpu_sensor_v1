@@ -615,6 +615,16 @@ sub get_device_memory{
 	}
 }
 
+sub get_pcie_link{
+	my %current_device = %{(shift)};
+	my %pcie_hash;
+	my ($return,$value) = nvmlDeviceGetMaxPcieLinkGeneration($current_device{'deviceHandle'});
+	$pcie_hash{'PCIeLinkGen'} = handle_error($return,$value);
+	($return,$value) = nvmlDeviceGetMaxPcieLinkWidth($current_device{'deviceHandle'});
+	$pcie_hash{'PCIeLinkWidth'} = handle_error($return,$value);
+	return \%pcie_hash;
+}
+
 sub get_device_util{
 	my %current_device = %{(shift)};
 	my %util_hash;
@@ -672,6 +682,8 @@ sub get_device_status{
 	$current_device{'inforomValid'} = get_inforom_validation($current_ref);
 	
 	$current_device{'throttleReasons'} = get_throttle_reasons($current_ref);
+	
+	$current_device{'PCIeLink'} = get_pcie_link($current_ref);
 	
 	return \%current_device;
 }
