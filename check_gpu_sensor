@@ -73,7 +73,7 @@ our %PERF_THRESHOLDS = (
 	ECCL2AggSgl => ['1','2'], #L2 cache ecc errors
 	ECCRegAggSgl => ['1','2'], #Dev register ecc errors
 	ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
-	PWRUsage => ['150','200'],
+	PWRUsage => ['150','200'], #Power Usage
 );
 
 ###############################################
@@ -158,7 +158,6 @@ sub get_help{
 }
 
 sub check_nvml_setup{
-	#TODO Check for more locations of nvml library
 	my $return = '';
 	eval{
 		require nvidia::ml;
@@ -569,34 +568,41 @@ sub get_inforom_validation{
 
 sub get_throttle_reasons{
 	my %current_device = %{(shift)};
-	#FIXME A bit mask can be returned, so more than one mask might be set
-	my ($return,$value) = nvmlDeviceGetCurrentClocksThrottleReasons($current_device{'deviceHandle'});
+	my %throttleReasons = (
+		$nvmlClocksThrottleReasonGpuIdle => "clocks_throttle_reason_gpu_idle",
+		$nvmlClocksThrottleReasonUserDefinedClocks => "clocks_throttle_reason_user_defined_clocks",
+		$nvmlClocksThrottleReasonSwPowerCap => "clocks_throttle_reason_sw_power_cap",
+		$nvmlClocksThrottleReasonHwSlowdown => "clocks_throttle_reason_hw_slowdown",
+		$nvmlClocksThrottleReasonUnknown => "clocks_throttle_reason_unknown"
+	);
+	my %throttle_hash;
+	my $clocksThrottleReasons;
+	#check the supported throttle reasons
+	my ($return,$supportedClocksThrottleReasons) = nvmlDeviceGetSupportedClocksThrottleReasons($current_device{'deviceHandle'});
+	#get the current active throttles
 	if($return == $NVML_SUCCESS){
-		if($value ==  $nvmlClocksThrottleReasonHwSlowdown){
-			return 'HW-slowdown'
-		}
-		if($value ==  $nvmlClocksThrottleReasonUnknown){
-			return 'Unknown-slowdown'
-		}
-		if($value ==  $nvmlClocksThrottleReasonNone){
-			return 'None-slowdown'
-		}
-		if($value ==  $nvmlClocksThrottleReasonGpuIdle){
-			return 'GPUIdle-slowdown'
-		}
-		if($value ==  $nvmlClocksThrottleReasonUserDefinedClocks){
-			return 'UserClocks-slowdown'
-		}
-		if($value ==  $nvmlClocksThrottleReasonSwPowerCap){
-			return 'SWPWR-slowdown'
+		($return,$clocksThrottleReasons) = nvmlDeviceGetCurrentClocksThrottleReasons($current_device{'deviceHandle'});
+	}
+	if ($return == $NVML_SUCCESS){
+		#the mask is not empty
+		if($clocksThrottleReasons){
+			foreach my $k(keys %throttleReasons){
+				#the curr mask is active
+				if($clocksThrottleReasons & $k){
+					$throttle_hash{$throttleReasons{$k}} = 1;
+				}
+			}
+			#none of the cases matched, an unknown throttle is active
+			$throttle_hash{'clocks_throttle_reason_unknown'} = 1;
 		}
 	}
-	elsif($return == $NVML_ERROR_NOT_SUPPORTED){
+	if($return == $NVML_ERROR_NOT_SUPPORTED){
 		return 'N/A';
 	}
 	else{
 		return nvmlErrorString($return);
 	}
+	return \%throttle_hash;
 }
 
 sub get_device_memory{
@@ -853,8 +859,9 @@ sub check_discrete_sensors{
 	#check if we have a hardware throttle
 	if(exists($dev_data_ref->{'throttleReasons'}) &&
 		$dev_data_ref->{'throttleReasons'} ne 'N/A'){
-		if($dev_data_ref->{'throttleReasons'} eq 'HW-slowdown' ||
-			$dev_data_ref->{'throttleReasons'} eq 'Unknown-slowdown'){
+		#the throttle hash is active
+		if(exists($dev_data_ref->{'throttleReasons'}{'clocks_throttle_reason_hw_slowdown'}) ||
+			exists($dev_data_ref->{'throttleReasons'}{'clocks_throttle_reason_unknown'})){
 			$status_level[0] = "Critical";
 			push(@{$status_level[2]},'throttleReasons');
 		}
