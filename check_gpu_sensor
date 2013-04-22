@@ -67,7 +67,13 @@ our %EXCLUDE_LIST = (
 	persistenceMode => '1',
 	inforomValid => '1',
 	PCIeLinkGen => '1',
-	PCIeLinkWidth => '1'
+	PCIeLinkWidth => '1',
+	clocks_throttle_reason_user_defined_clocks => '1',
+	clocks_throttle_reason_gpu_idle => '1',
+	clocks_throttle_reason_user_defined_clocks => '1',
+	clocks_throttle_reason_sw_power_cap => '1',
+	clocks_throttle_reason_hw_slowdown => '1',
+	clocks_throttle_reason_unknown => '1'
 );
 
 #warning and critical default threshold levels
