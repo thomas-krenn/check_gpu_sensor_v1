@@ -583,8 +583,8 @@ sub get_throttle_reasons{
 		#the mask is not empty
 		if($clocksThrottleReasons){
 			foreach my $k(keys %throttleReasons){
-				#the curr mask is active
-				if($clocksThrottleReasons & $k){
+				#the curr mask is active for the supported ones
+				if($k & $supportedClocksThrottleReasons){
 					$throttle_hash{$throttleReasons{$k}} = 1;
 				}
 			}
