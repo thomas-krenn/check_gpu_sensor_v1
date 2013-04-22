@@ -295,10 +295,6 @@ sub get_status_string{
 					$status_string .= " (".$PERF_DATA[0]->{$sensor}.")";	
 				}
 				$status_string .= "]";
-				if($i != @$curr_sensors){
-					$status_string .= " ";#print a space except at the end
-				}
-				$i++;
 			}
 		}
 	}
