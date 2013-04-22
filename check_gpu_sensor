@@ -326,7 +326,8 @@ sub get_verbose_string{
 		$status_string .= "------------- begin of debug output (-vvv is set): ------------\n";
 		$status_string .= "Nvidia Driver Version: ".get_driver_version()."\n";
 		$status_string .= "Nvidia NVML Version: ".get_nvml_version()."\n";
-		$status_string .= "Number of GPUs in system: ".@DEVICE_LIST."\n";
+		$status_string .= "Number of GPUs in system: ".get_device_count()."\n";
+		$status_string .= "Current checked GPU:\n";
 		foreach my $g (@DEVICE_LIST){
 			$status_string .= "\t-".$g->{'productName'}."\n";
 		}
