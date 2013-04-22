@@ -897,16 +897,18 @@ sub check_discrete_sensors{
 		}
 	}
 	#check the PCIe link settings
-	if(exists($dev_data_ref->{'PCIeLinkGen'}) &&
-		$dev_data_ref->{'PCIeLinkGen'} ne 'N/A'){
-		if($dev_data_ref->{'PCIeLinkGen'} ne $PERF_THRESHOLDS{'PCIeLinkGen'}[0]){
+	if(exists($dev_data_ref->{'PCIeLink'}) &&
+		$dev_data_ref->{'PCIeLink'} ne 'N/A'){
+		if($dev_data_ref->{'PCIeLink'}->{'PCIeLinkGen'} ne 'N/A' &&
+		$dev_data_ref->{'PCIeLink'}->{'PCIeLinkGen'} ne $PERF_THRESHOLDS{'PCIeLinkGen'}[0]){
 			$status_level[0] = "Critical";
 			push(@{$status_level[2]},'PCIeLinkGen');
 		}
 	}
-	if(exists($dev_data_ref->{'PCIeLinkWidth'}) &&
-		$dev_data_ref->{'PCIeLinkWidth'} ne 'N/A'){
-		if($dev_data_ref->{'PCIeLinkWidth'} ne $PERF_THRESHOLDS{'PCIeLinkWidth'}[0]){
+	if(exists($dev_data_ref->{'PCIeLink'}) &&
+		$dev_data_ref->{'PCIeLink'} ne 'N/A'){
+		if($dev_data_ref->{'PCIeLink'}->{'PCIeLinkWidth'} ne 'N/A' &&
+		$dev_data_ref->{'PCIeLink'}->{'PCIeLinkWidth'} ne $PERF_THRESHOLDS{'PCIeLinkWidth'}[0]){
 			$status_level[0] = "Critical";
 			push(@{$status_level[2]},'PCIeLinkWidth');
 		}
