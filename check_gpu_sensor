@@ -583,13 +583,16 @@ sub get_throttle_reasons{
 		#the mask is not empty
 		if($clocksThrottleReasons){
 			foreach my $k(keys %throttleReasons){
-				#the curr mask is active for the supported ones
+				#the curr mask is supported
 				if($k & $supportedClocksThrottleReasons){
-					$throttle_hash{$throttleReasons{$k}} = 1;
+					#the curr mask is active
+					if($k & $clocksThrottleReasons){
+						$throttle_hash{$throttleReasons{$k}} = 1;
+					}
 				}
 			}
-			#none of the cases matched, an unknown throttle is active
-			$throttle_hash{'clocks_throttle_reason_unknown'} = 1;
+			#TODO: What if some unknown bits are set?
+			#$throttle_hash{'clocks_throttle_reason_unknown'} = 1;
 		}
 		return \%throttle_hash;
 	}
