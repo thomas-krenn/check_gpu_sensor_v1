@@ -26,28 +26,49 @@
  Requirements:
  -------------
    o NVDIA display driver
-      *Currently the proprietary NVIDIA driver from the official website
+      * Currently the proprietary NVIDIA driver from the official website
        (under Ubuntu 10.4, cf. http://www.thomas-krenn.com/de/wiki/CUDA_Installation)
        as well as the driver from the repositories (with Ubuntu 11.10 and 12.04)
        have been tested successfully.
    o NVML perl bindings
-      *The bindigs are required to access the NVML library via Perl. Fetch
+      * The bindigs are required to access the NVML library via Perl. Fetch
        a copy of the bindings from CPAN (http://search.cpan.org/~nvbinding/).
        For more information about the NVML library also visit
        http://developer.nvidia.com/nvidia-management-library-nvml.
    o Perl
    o Required perl modules (should be installed per default under Ubuntu)
-     *strict
-     *warinings
-     *Getopt:Long
-     *Switch 
+     * strict
+     * warnings
+     * Getopt:Long
+     * Switch
+     NOT installed per default:
+     * Config::IniFiles;
    o Nagios or Icinga
-
 
  Installation hints:
  -------------------
    On Ubuntu using the driver from the repositories the file "Makefile.PL" in the 
    nvml package must be modified. Add the parameter '-L/usr/lib/nvidia-current'
-   to 'LIBS' in order to get rid of the warning:
-   Note (probably harmless): No library found for -lnvidia-ml
+   or '-L/usr/lib/nvidia-experimental-304' (for experimental drivers) to 'LIBS'
+   in order to get rid of the warning:
+   
+       Note (probably harmless): No library found for -lnvidia-ml
+   
    when calling 'perl Makefile.PL'.
+
+ Notes on sensor warnings:
+ -------------------
+ * clocks_throttle_reason_unknown
+   This throttle reason can also be reported during PState or clock change
+   before driver version r19. Please recheck the throttle reasons with
+   $ nvidia-smi -i 0 -q | grep -i throttle -A 5
+    Clocks Throttle Reasons
+        Idle                    : Not Active
+        User Defined Clocks     : Active
+        SW Power Cap            : Not Active
+        HW Slowdown             : Not Active
+        Unknown                 : Not Active
+ * fanSpeed
+   Currently the sensor "Fan speed" is the speed the fan algorithm tries to
+   run the fan. Don't rely on this sensor if you want to know if the fan is
+   really working properly.

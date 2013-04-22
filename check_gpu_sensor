@@ -65,7 +65,9 @@ our %EXCLUDE_LIST = (
 	ECCRegVolDble => '1',
 	ECCTexVolDble => '1',
 	persistenceMode => '1',
-	inforomValid => '1'
+	inforomValid => '1',
+	PCIeLinkGen => '1',
+	PCIeLinkWidth => '1'
 );
 
 #warning and critical default threshold levels
@@ -82,6 +84,8 @@ our %PERF_THRESHOLDS = (
 	ECCRegAggSgl => ['1','2'], #Dev register ecc errors
 	ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
 	PWRUsage => ['150','200'], #Power Usage
+	PCIeLinkGen => ['2'], #PCIe link generation
+	PCIeLinkWidth => ['16'], #PCIe link width
 );
 
 ###############################################
@@ -140,11 +144,15 @@ sub get_help{
        This changes the warning level for the temperature.
   [-c <list of critical thresholds>]
        Change the default critical levels. The order of the levels
-       is the same as for the warning levels.
+       is the same as for the warning levels, moreover two more items
+       can be listed:
+       -PCIeLinkGen
+       -PCIeLinkWidth
        Levels that should stay default get a 'd' assigned.
        Example:
-           check_gpu_sensor -c '100,d,d,d,d,d,d,d,d' 
-       This changes the critical level for the temperature.
+           check_gpu_sensor -c '100,d,d,d,d,d,d,d,d,3,16' 
+       This changes the critical level for the temperature, the PCIe link
+       generation to '3' and the link width to '16'.
   [-cf <config file path>]
        Instead of specifying the thresholds via '-w/-c' you can define perfdata
        thresholds in a config file. For valid sensor names compare to the
@@ -575,8 +583,8 @@ sub get_throttle_reasons{
 	my $clocksThrottleReasons;
 	#check the supported throttle reasons
 	my ($return,$supportedClocksThrottleReasons) = nvmlDeviceGetSupportedClocksThrottleReasons($current_device{'deviceHandle'});
-	#FIXME this should be necessary
-	my $supported_cpy = $supportedClocksThrottleReasons;
+	#FIXME this should not be necessary
+	my $supported_cpy = sprintf("%x16",$supportedClocksThrottleReasons);
 	#get the current active throttles
 	if($return == $NVML_SUCCESS){
 		($return,$clocksThrottleReasons) = nvmlDeviceGetCurrentClocksThrottleReasons($current_device{'deviceHandle'});
@@ -803,6 +811,9 @@ sub check_perf_threshold{
 					case 6 {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i]};
 					case 7 {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i]};
 					case 8 {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i]};
+					#configure thresholds here, but the sensors are treated as discrete
+					case 9 {$PERF_THRESHOLDS{'PCIeLinkGen'}[0] = $crit_list[$i]};
+					case 10 {$PERF_THRESHOLDS{'PCIeLinkWidth'}[0] = $crit_list[$i]};
 				}
 			}		
 		}			
@@ -879,6 +890,22 @@ sub check_discrete_sensors{
 			push(@{$status_level[2]},'throttleReasons');
 		}
 	}
+	#check the PCIe link settings
+	if(exists($dev_data_ref->{'PCIeLinkGen'}) &&
+		$dev_data_ref->{'PCIeLinkGen'} ne 'N/A'){
+		if($dev_data_ref->{'PCIeLinkGen'} ne $PERF_THRESHOLDS{'PCIeLinkGen'}[0]){
+			$status_level[0] = "Critical";
+			push(@{$status_level[2]},'PCIeLinkGen');
+		}
+	}
+	if(exists($dev_data_ref->{'PCIeLinkWidth'}) &&
+		$dev_data_ref->{'PCIeLinkWidth'} ne 'N/A'){
+		if($dev_data_ref->{'PCIeLinkWidth'} ne $PERF_THRESHOLDS{'PCIeLinkWidth'}[0]){
+			$status_level[0] = "Critical";
+			push(@{$status_level[2]},'PCIeLinkWidth');
+		}
+	}
+	
 	return \@status_level;
 }
 
