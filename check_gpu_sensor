@@ -575,6 +575,8 @@ sub get_throttle_reasons{
 	my $clocksThrottleReasons;
 	#check the supported throttle reasons
 	my ($return,$supportedClocksThrottleReasons) = nvmlDeviceGetSupportedClocksThrottleReasons($current_device{'deviceHandle'});
+	#FIXME this should be necessary
+	my $supported_cpy = $supportedClocksThrottleReasons;
 	#get the current active throttles
 	if($return == $NVML_SUCCESS){
 		($return,$clocksThrottleReasons) = nvmlDeviceGetCurrentClocksThrottleReasons($current_device{'deviceHandle'});
