@@ -1,0 +1,287 @@
+=head1 NAME
+
+check_gpu_sensor - A NVIDIA NVML Nagios/Icinga plugin to check gpu sensors.
+
+=head1 SYNOPSIS
+
+Example:
+
+	$ ./check_gpu_sensor -db '0000:83:00.0'
+	OK - Tesla K20c |ECCL2AggSgl=0;1;2; ECCTexAggSgl=0;1;2; PWRUsage=31.43;150;200;
+	ECCRegAggSgl=0;1;2; SMClock=705 ECCL1AggSgl=0;1;2; usedMemory=0.24;95;99;
+	fanSpeed=30;80;95; memClock=2600 GPUUtilRate=25 memUtilRate=1 graphicsClock=705
+	GPUTemperature=36;85;100; ECCMemAggSgl=0;1;2;
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=head2 get_version
+
+Returns the check_gpu_sensor version, the NVIDIA driver version and the nvml
+library version.
+
+=head2 get_usage
+
+Return a short usage message text how to call the plugin.
+
+=head2 get_help
+
+Get the help message text how to call the plugin. Also config parameters are
+described and how to use them.
+
+=head2 check_nvml_setup
+
+Checks if the nvml library can be found in any of the installation paths. 
+
+=head2 handle_error
+
+Checks the return values of the NVML function calls and propagates the error
+strings if any are present. If a feature is not supported 'N/A' is returned.
+
+=head2 print_hash
+
+Prints the keys and values of a hash. If every value of a hash is 'N/A' the
+whole hash is returned as 'N/A'.
+
+=head2 get_hash_values
+
+Returns a string containing all values and hashes. The method uses print_hash
+to get the nested hash values.
+
+=head2 get_status_string
+
+Form a status string with warning and critical sensor values followed by
+performance data with their corresponding thresholds.
+
+=head2 get_verbose_string
+
+Get a verbose string with version informations and all sensor values (also)
+with not supported 'N/A' sensors.
+
+=head2 check_hash_for_perf
+
+Checks a hash if it contains any numerical values to be displayed as
+performance data. EXCLUDE_LIST contains the hash keys that should not be
+displayed as performance values (device handles, device IDs).
+
+=head2 read_config
+
+Reads out the given config file, that can be used to define performance data
+thresholds. To have a valid section in ini-style config use 'thresholds' as
+section. Example:
+
+	[thresholds]
+	GPUTemperature = 90, 105
+
+=head2 get_nvml_version
+
+Get the version of the installed NVML version.
+
+=head2 get_driver_version
+
+Get the version of the install NVIDIA driver.
+
+=head2 get_device_count
+
+Get the number of the current devices in the system.
+
+=head2 get_device_clock
+
+Get SM, graphics and memory clock.
+
+=head2 get_device_inforom
+
+Get the inforom version for OEM, ECC und Power.
+
+=head2 get_device_ecc
+
+Get device ECC error counters - aggregate counters for single bit, volatile
+counters for double bit. Single bit errors thresholds can be configured as it
+is hard to define a certain level where single bit errors really lead to a card
+error. Double bit errors are treated as discrete sensors, they directly lead
+to a critical status. Volatile counters are used as the counters are resetted
+on reboot, if the double bit errors are still there afterwards the card may
+have some issues.
+
+=head2 get_device_power
+
+Checks if the power management features are enabled and fetches the device's
+power usage in watts. Calls nvmlDeviceGetPowerUsage and converts the return
+value (milliwatts) to watts. To set a power level with nvidia-smi use
+(administrator privileges reqired):
+
+	$ sudo nvidia-smi -i ID -pl POWER_LIMIT
+
+Limits must be between Min and Max power limit. The limit defines the upper
+bound at which the power managment algorithm starts in. To get the supported
+power limits execute:
+
+	$ nvidia-smi -i 0 -q -d POWER
+
+Performance thresholds set via the plugin are independent from the
+nvidia-smi one's.'
+
+=head2 get_persistence_mode
+
+Gets the device's persistence mode setting (due to nvidia-smi documentation
+only on Linux available). If the setting is available it later on checks if
+the mode is enabled. As it is more convenient to use the persistence mode a
+Warning status is triggered if the persistence mode is not enabled. Enable
+the mode with:
+
+	$ sudo nvidia-smi -i ID -pm 1
+
+=head2 get_inforom_validation
+
+Reads the inforom from the flash file and verifys the checksum. If the
+inforom is corrupted the sensor is treated as a discrete sensor and
+a critical status is returned. If the inforom is OK "valid" is returned.
+
+=head2 get_throttle_reasons
+
+Retrieve current clock throttle reasons. For the throttle reasons "HWSlowdown"
+and "ReasonUnknown" the sensor is treated as discrete and a Critical status
+is returned. For throttle reasons idle, user defined clocks, sw power caps and
+none no Critical status is triggered.
+
+=head2 get_device_memory
+
+Get the device memory usage in percentage of the total available memory.
+
+=head2 get_device_util
+
+Get the device utilization rates for memory and GPU.
+
+=head2 get_device_status
+
+Call all device related sensor functions. Currently this includes:
+
+	-Device Name		-Clock infos
+	-Comupte mode		-Inforom infos
+	-FanSpeed		-ECC error counters
+	-Temperature		-Power usage
+	-PCI infos		-Memory usage
+	-Device Utilization	-Persistence Mode
+	-Inforom validation	-Throttle reasons
+
+=head2 get_all_device_status
+
+Checks if a GPU with the defined identifier is available. Then fetches
+a device handle and calls get_device_status to retreive the status value
+of the desired GPU.
+
+=head2 collect_perf_data
+
+Parses the device hashes of a device and collects the perf data (only numeric values)
+into arrays. Uses check_hash_for_perf to find the performance values.
+
+=head2 check_perf_threshold
+
+Checks if the given performance data is in its ranges. For the performance values
+that are not in their thresholds two arrays are created: one for the warning and
+one for the critical sensors. If one sensor is critical it is removed from the
+warning array, so that is it not double displayed.
+
+=head2 check_discrete_sensors
+
+Checks if the discrete sensors are present and have a certain value. Currently
+these are:
+
+	-Double ECC errors
+	-Persistence mode
+	-Inforom checksum
+	-Throttle reasons (HW and unknown slowdown)
+
+=head1 DIAGNOSTICS
+
+=over
+
+=item C<< Error: No NVIDIA device found in current system. >>
+
+The NVML device count function returned 0.
+
+=item C<< Error: Cannot get handle for device bus ID: >>
+
+nvmlDeviceGetHandleByPciBusId returned an error.
+
+=item C<< Error: Cannot get handle for device: >>
+
+nvmlDeviceGetHandleByIndex returned an error.
+
+=item C<< Debug: Nvml setup check failed. >>
+
+Checking for the libnvidia-ml library in the given paths did not return a success.
+
+=item C<< Debug: NVML initialization failed. >>
+
+The call to nvmlInit returned an error and failed.
+
+=item C<< Error: Valid PCI bus string or device ID is required. >>
+
+A device identifier (device id or pci bus id) must be specified to know the
+Gpu whose sensors should be checked.
+
+=item C<< Ensure to use a valid device id or device bus string. >>
+
+For the given device identifier a valid device handle could not be created.
+
+=item C<< Debug: NVML shutdown failed. >>
+
+NVML did not shutdown correctly.
+
+=item C<< Error: Cannot use empty config path or empty section. >>
+
+The given config path is empty.
+
+=item C<< Error: Could not read given config. >>
+
+Config::IniFiles returned an error while reading the config.
+
+=back
+
+=head1 DEPENDENCIES
+
+	use strict;
+	use warnings;
+	use nvidia::ml qw(:all);
+	use Getopt::Long qw(:config no_ignore_case);
+	use Switch;
+	use Config::IniFiles;
+
+=head1 AUTHOR
+
+Georg Schönberger  C<< <gschoenberger@thomas-krenn.com> >>
+
+=head1 LICENCE AND COPYRIGHT
+
+Copyright (c) 2012, Georg Schönberger C<< <gschoenberger@thomas-krenn.com> >>.
+All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
+
+=head1 DISCLAIMER OF WARRANTY
+
+BECAUSE THIS SOFTWARE IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+FOR THE SOFTWARE, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN
+OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+PROVIDE THE SOFTWARE "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE
+ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH
+YOU. SHOULD THE SOFTWARE PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL
+NECESSARY SERVICING, REPAIR, OR CORRECTION.
+
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+REDISTRIBUTE THE SOFTWARE AS PERMITTED BY THE ABOVE LICENCE, BE
+LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL,
+OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE
+THE SOFTWARE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING
+RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
+FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
+SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
