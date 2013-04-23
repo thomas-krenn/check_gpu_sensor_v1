@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # check_gpu_sensor: Nagios/Icinga plugin to check GPU sensors
 #
-# Copyright (C) 2011-2012 Thomas-Krenn.AG,
+# Copyright (C) 2011-2013 Thomas-Krenn.AG,
 # For a list of contributors see changelog.txt
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -99,8 +99,8 @@ our %PERF_THRESHOLDS = (
 # They return help messages and version information
 ###############################################
 sub get_version{
-	return "check_gpu_sensor version 2.0 20130218
-Copyright (C) 2011-2012 Thomas-Krenn.AG (written by Georg Schönberger)
+	return "check_gpu_sensor version 2.0 20130423
+Copyright (C) 2011-2013 Thomas-Krenn.AG (written by Georg Schönberger)
 Current updates available via git repository git.thomas-krenn.com.
 Your system is using NVIDIA driver version ".get_driver_version()." with
 NVML version ".get_nvml_version();
@@ -127,10 +127,9 @@ sub get_help{
             ./check_gpu_sensor -db '0000:01:00.0'
   [-T <sensor type>]
        limit sensors to query based on NVML sensor types.
-       The sensors are currently only working for performance data sensors.
+       The sensors are currently working for performance data sensors.
        Examples for GPU sensor types are 'GPUTemperature',
        'usedMemory','fanSpeed'
-       
   [-w <list of warning thresholds>]
        Change the default warning levels (also consider to use a config file
        instead ('-cf'). The order of the levels

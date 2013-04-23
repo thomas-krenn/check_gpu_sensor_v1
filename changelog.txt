@@ -4,11 +4,13 @@ Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
 
 Version 2.0 20130422
   * Removed deprecated functions from old driver bindings
+  * Enhanced error checking for NVML library
   * Renamed sensors to fit more to nvidia-smi names
   * Added more features
     * PCIe link generation and width
     * Power Readings
     * Throttle Reasons
+    * ECC Error checking
     * Persistence Mode checking
 
 Version 1.2 20120912
