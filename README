@@ -44,7 +44,8 @@
        have been tested successfully.
    o NVML perl bindings
       * The bindigs are required to access the NVML library via Perl. Fetch
-       a copy of the bindings from CPAN (http://search.cpan.org/~nvbinding/).
+       a copy of the bindings from CPAN:
+       * http://search.cpan.org/~nvbinding/
        For more information about the NVML library also visit
        http://developer.nvidia.com/nvidia-management-library-nvml.
    o Perl
@@ -55,9 +56,8 @@
      * use feature qw(switch)
        feature switch is available with Perl 5.10.1. The ePN of icinga 1.6.1 showed up
        errors with Switch-Case statements. Therefore it was changed to given-when.
-       
      NOT installed per default:
-     * Config::IniFiles;
+       * Config::IniFiles;
    o Nagios or Icinga
 
  Installation hints:

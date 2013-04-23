@@ -6,11 +6,12 @@ check_gpu_sensor - A NVIDIA NVML Nagios/Icinga plugin to check gpu sensors.
 
 Example:
 
-	$ ./check_gpu_sensor -db '0000:83:00.0'
-	OK - Tesla K20c |ECCL2AggSgl=0;1;2; ECCTexAggSgl=0;1;2; PWRUsage=31.43;150;200;
-	ECCRegAggSgl=0;1;2; SMClock=705 ECCL1AggSgl=0;1;2; usedMemory=0.24;95;99;
-	fanSpeed=30;80;95; memClock=2600 GPUUtilRate=25 memUtilRate=1 graphicsClock=705
-	GPUTemperature=36;85;100; ECCMemAggSgl=0;1;2;
+	./check_gpu_sensor -db 0000:83:00.0
+	Warning - Tesla K20 [persistenceMode = Warning]|ECCL2AggSgl=0;1;2;
+	ECCTexAggSgl=0;1;2; memUtilRate=1 PWRUsage=31.22;150;200;
+	ECCRegAggSgl=0;1;2; SMClock=705 ECCL1AggSgl=0;1;2; GPUTemperature=38;85;100;
+	memClock=2600 usedMemory=0.24;95;99; fanSpeed=30;80;95; graphicsClock=705
+	GPUUtilRate=27 ECCMemAggSgl=0;1;2;
 
 =head1 DESCRIPTION
 
@@ -246,7 +247,7 @@ Config::IniFiles returned an error while reading the config.
 	use warnings;
 	use nvidia::ml qw(:all);
 	use Getopt::Long qw(:config no_ignore_case);
-	use Switch;
+	use feature qw(switch);
 	use Config::IniFiles;
 
 =head1 AUTHOR
@@ -255,7 +256,7 @@ Georg Schönberger  C<< <gschoenberger@thomas-krenn.com> >>
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2012, Georg Schönberger C<< <gschoenberger@thomas-krenn.com> >>.
+Copyright (c) 2013, Georg Schönberger C<< <gschoenberger@thomas-krenn.com> >>.
 All rights reserved.
 
 This program is free software; you can redistribute it and/or modify it under
