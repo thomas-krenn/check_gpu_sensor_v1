@@ -31,10 +31,6 @@ Return a short usage message text how to call the plugin.
 Get the help message text how to call the plugin. Also config parameters are
 described and how to use them.
 
-=head2 check_nvml_setup
-
-Checks if the nvml library can be found in any of the installation paths. 
-
 =head2 handle_error
 
 Checks the return values of the NVML function calls and propagates the error
@@ -74,6 +70,11 @@ section. Example:
 
 	[thresholds]
 	GPUTemperature = 90, 105
+
+=head2 configure_thresholds
+
+Gets the config hash as parameter an sets the values of %PERF_THRESHOLDS to the
+values from the config hash.
 
 =head2 get_nvml_version
 
@@ -121,7 +122,9 @@ power limits execute:
 	$ nvidia-smi -i 0 -q -d POWER
 
 Performance thresholds set via the plugin are independent from the
-nvidia-smi one's.'
+nvidia-smi one's.
+Note that it's possible for power usage to cross power limit for short periods
+of time before the power management reacts. 
 
 =head2 get_persistence_mode
 
@@ -150,9 +153,22 @@ none no Critical status is triggered.
 
 Get the device memory usage in percentage of the total available memory.
 
+=head2 get_pcie_link
+
+Get the maximum PCIe link generation and the max PCIe link width. You can
+specify a critical value for your card where you get an alert if the desired
+PCIe settings don't match the one's fetched from the card.
+Example:
+
+	check_gpu_sensor -c '100,d,d,d,d,d,d,d,d,3,16'
+	
+This would specify PCIe Gen 3 with width 16, if the card only reports Gen 2 a
+Critical Alert is issued.
+
 =head2 get_device_util
 
-Get the device utilization rates for memory and GPU.
+Get the device utilization rates for memory and GPU. Note that no limits can
+be set for this sensors, it is more intended to be used as historical data.
 
 =head2 get_device_status
 
@@ -165,6 +181,7 @@ Call all device related sensor functions. Currently this includes:
 	-PCI infos		-Memory usage
 	-Device Utilization	-Persistence Mode
 	-Inforom validation	-Throttle reasons
+	-PCIe Link settings
 
 =head2 get_all_device_status
 
@@ -193,6 +210,7 @@ these are:
 	-Persistence mode
 	-Inforom checksum
 	-Throttle reasons (HW and unknown slowdown)
+	- PCIe link Gen and width
 
 =head1 DIAGNOSTICS
 
@@ -252,7 +270,7 @@ Config::IniFiles returned an error while reading the config.
 
 =head1 AUTHOR
 
-Georg Schönberger  C<< <gschoenberger@thomas-krenn.com> >>
+Georg Schönberger C<< <gschoenberger@thomas-krenn.com> >>
 
 =head1 LICENCE AND COPYRIGHT
 
