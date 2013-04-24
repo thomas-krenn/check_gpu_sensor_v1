@@ -58,6 +58,8 @@
        errors with Switch-Case statements. Therefore it was changed to given-when.
      NOT installed per default:
        * Config::IniFiles;
+       On Ubuntu you can use
+         $ sudo apt-get install libconfig-inifiles-perl
    o Nagios or Icinga
 
  Installation hints:
