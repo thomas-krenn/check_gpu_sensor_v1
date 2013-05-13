@@ -27,7 +27,7 @@
 use strict;
 use warnings;
 use Getopt::Long qw(:config no_ignore_case);#case sensitive
-use feature qw(switch);
+use Switch 'Perl6';
 use Config::IniFiles;
 
 BEGIN{
