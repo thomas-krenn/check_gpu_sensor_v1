@@ -3,6 +3,10 @@ Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
 ################################################################################
 
 Version 2.0 20130422
+  * Using switch/case feature to be compatible with icinga embedded perl
+    interpreter and perl versions < 5.10.
+
+Version 2.0 20130422
   * Removed deprecated functions from old driver bindings
   * Enhanced error checking for NVML library
   * Renamed sensors to fit more to nvidia-smi names
