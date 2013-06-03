@@ -99,7 +99,7 @@ our %PERF_THRESHOLDS = (
 # They return help messages and version information
 ###############################################
 sub get_version{
-	return "check_gpu_sensor version 2.0 20130423
+	return "check_gpu_sensor version 2.1 20130528
 Copyright (C) 2011-2013 Thomas-Krenn.AG (written by Georg Schönberger)
 Current updates available via git repository git.thomas-krenn.com.
 Your system is using NVIDIA driver version ".get_driver_version()." with
