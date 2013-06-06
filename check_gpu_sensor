@@ -401,7 +401,9 @@ sub configure_thresholds{
 		#the key is present in the config
 		if(exists($config->{$k})){
 			$PERF_THRESHOLDS{$k}[0] = $config->{$k}[0];
-			$PERF_THRESHOLDS{$k}[1] = $config->{$k}[1];
+			if(scalar @{$config->{$k}} > 1){
+				$PERF_THRESHOLDS{$k}[1] = $config->{$k}[1];
+			}
 		}
 	}
 }
