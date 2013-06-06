@@ -2,6 +2,10 @@
 Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
 ################################################################################
 
+Version 2.2 20130606
+  * Removing config ini files as there is no native rpm package. No a simple
+    perl hash is used for threshold configuration.
+
 Version 2.1 20130528
   * Using switch/case feature to be compatible with icinga embedded perl
     interpreter and perl versions < 5.10.

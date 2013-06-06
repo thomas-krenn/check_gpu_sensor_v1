@@ -28,7 +28,6 @@ use strict;
 use warnings;
 use Getopt::Long qw(:config no_ignore_case);#case sensitive
 use Switch 'Perl6';
-use Config::IniFiles;
 
 BEGIN{
 	eval{
@@ -99,7 +98,7 @@ our %PERF_THRESHOLDS = (
 # They return help messages and version information
 ###############################################
 sub get_version{
-	return "check_gpu_sensor version 2.1 20130528
+	return "check_gpu_sensor version 2.2 20130606
 Copyright (C) 2011-2013 Thomas-Krenn.AG (written by Georg Schönberger)
 Current updates available via git repository git.thomas-krenn.com.
 Your system is using NVIDIA driver version ".get_driver_version()." with
@@ -383,15 +382,17 @@ sub read_config{
 		print "Error: Cannot use empty config path.";
 		exit(3);
 	}
-	my %config;
-	eval{
-		tie %config, 'Config::IniFiles', (-file => $cfg_path);
-	};
-	if($@){
-		print "Error: Could not read given config.";
-		exit(3);
+	
+	#read config structure back in again
+	open my $in, '<', $cfg_path or die $!;
+	my $config;
+	{
+		#turn on slurp mode, read in all data at once
+		local $/;
+		$config = eval <$in>;
 	}
-	return \%config;
+	close $in;
+	return $config;
 }
 
 sub configure_thresholds{
@@ -399,12 +400,8 @@ sub configure_thresholds{
 	foreach my $k (keys %PERF_THRESHOLDS){
 		#the key is present in the config
 		if(exists($config->{$k})){
-			#split the given values
-			my @threshs = split(/,/,$config->{$k});
-			$threshs[0] =~ s/ //g;
-			$threshs[1] =~ s/ //g;
-			$PERF_THRESHOLDS{$k}[0] = $threshs[0];
-			$PERF_THRESHOLDS{$k}[1] = $threshs[1];
+			$PERF_THRESHOLDS{$k}[0] = $config->{$k}[0];
+			$PERF_THRESHOLDS{$k}[1] = $config->{$k}[1];
 		}
 	}
 }
@@ -984,7 +981,7 @@ MAIN: {
 	#Read a given config and change thresholds
 	if($config_file){
 		my $conf = read_config($config_file);
-		configure_thresholds($conf->{'thresholds'});
+		configure_thresholds($conf);
 	}
 	
 	#TODO Is the sensor list only for performance data valid?

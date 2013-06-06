@@ -65,11 +65,12 @@ displayed as performance values (device handles, device IDs).
 =head2 read_config
 
 Reads out the given config file, that can be used to define performance data
-thresholds. To have a valid section in ini-style config use 'thresholds' as
-section. Example:
+thresholds. The config style is a simple perl hash:
 
-	[thresholds]
-	GPUTemperature = 90, 105
+	{
+	GPUTemperature => [85, 100],
+	usedMemory => [95, 99]
+	}
 
 =head2 configure_thresholds
 
@@ -253,10 +254,6 @@ NVML did not shutdown correctly.
 
 The given config path is empty.
 
-=item C<< Error: Could not read given config. >>
-
-Config::IniFiles returned an error while reading the config.
-
 =back
 
 =head1 DEPENDENCIES
@@ -265,8 +262,7 @@ Config::IniFiles returned an error while reading the config.
 	use warnings;
 	use nvidia::ml qw(:all);
 	use Getopt::Long qw(:config no_ignore_case);
-	use feature qw(switch);
-	use Config::IniFiles;
+	use Switch 'Perl6';
 
 =head1 AUTHOR
 
