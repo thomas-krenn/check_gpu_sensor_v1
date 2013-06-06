@@ -160,8 +160,8 @@ sub get_help{
   [-cf <config file path>]
        Instead of specifying the thresholds via '-w/-c' you can define perfdata
        thresholds in a config file. For valid sensor names compare to the
-       given sensors above (from '-w' option). The sensors must be placed in a 
-       [thresholds] section.
+       given sensors above (from '-w' option). The sensors must be placed as a
+       perl hash (cf. POD file).
   [-v <Verbose Level>]
        be verbose
          (no -v) .. single line output
