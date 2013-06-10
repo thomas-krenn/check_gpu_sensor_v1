@@ -27,7 +27,6 @@
 use strict;
 use warnings;
 use Getopt::Long qw(:config no_ignore_case);#case sensitive
-use Switch 'Perl6';
 
 BEGIN{
 	eval{
@@ -784,17 +783,15 @@ sub check_perf_threshold{
 			#everything, except that values that should stay default, get new values
 			#e.g. -w d,15,60 changes the warning level for sensor 2 and 3 but not for 1
 			if($warn_list[$i] ne 'd'){
-				given($i){
-					when(0) {$PERF_THRESHOLDS{'GPUTemperature'}[0] = $warn_list[$i]};
-					when(1) {$PERF_THRESHOLDS{'usedMemory'}[0] = $warn_list[$i]};
-					when(2) {$PERF_THRESHOLDS{'fanSpeed'}[0] = $warn_list[$i]};
-					when(3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[0] = $warn_list[$i]};
-					when(4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[0] = $warn_list[$i]};
-					when(5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[0] = $warn_list[$i]};
-					when(6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i]};
-					when(7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i]};
-					when(8) {$PERF_THRESHOLDS{'PWRUsage'}[0] = $warn_list[$i]};
-				}
+				if($i == 0) {$PERF_THRESHOLDS{'GPUTemperature'}[0] = $warn_list[$i];}
+				elsif($i == 1) {$PERF_THRESHOLDS{'usedMemory'}[0] = $warn_list[$i];}
+				elsif($i == 2) {$PERF_THRESHOLDS{'fanSpeed'}[0] = $warn_list[$i];}
+				elsif($i == 3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[0] = $warn_list[$i];}
+				elsif($i == 4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[0] = $warn_list[$i];}
+				elsif($i == 5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[0] = $warn_list[$i];}
+				elsif($i == 6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i];}
+				elsif($i == 7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i];}
+				elsif($i == 8) {$PERF_THRESHOLDS{'PWRUsage'}[0] = $warn_list[$i];}
 			}		
 		}			
 	}
@@ -802,20 +799,18 @@ sub check_perf_threshold{
 		@crit_list = split(/,/, join(',', @crit_list));
 		for ($i = 0; $i < @crit_list; $i++){
 			if($crit_list[$i] ne 'd'){
-				given($i){
-					when(0) {$PERF_THRESHOLDS{'GPUTemperature'}[1] = $crit_list[$i]};
-					when(1) {$PERF_THRESHOLDS{'usedMemory'}[1] = $crit_list[$i]};
-					when(2) {$PERF_THRESHOLDS{'fanSpeed'}[1] = $crit_list[$i]};
-					when(3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[1] = $crit_list[$i]};
-					when(4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[1] = $crit_list[$i]};
-					when(5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[1] = $crit_list[$i]};
-					when(6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i]};
-					when(7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i]};
-					when(8) {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i]};
-					#configure thresholds here, but the sensors are treated as discrete
-					when(9) {$PERF_THRESHOLDS{'PCIeLinkGen'}[0] = $crit_list[$i]};
-					when(10) {$PERF_THRESHOLDS{'PCIeLinkWidth'}[0] = $crit_list[$i]};
-				}
+				if($i == 0) {$PERF_THRESHOLDS{'GPUTemperature'}[1] = $crit_list[$i];}
+				elsif($i == 1) {$PERF_THRESHOLDS{'usedMemory'}[1] = $crit_list[$i];}
+				elsif($i == 2) {$PERF_THRESHOLDS{'fanSpeed'}[1] = $crit_list[$i];}
+				elsif($i == 3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[1] = $crit_list[$i];}
+				elsif($i == 4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[1] = $crit_list[$i];}
+				elsif($i == 5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[1] = $crit_list[$i];}
+				elsif($i == 6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i];}
+				elsif($i == 7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i];}
+				elsif($i == 8) {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i];}
+				#configure thresholds here, but the sensors are treated as discrete
+				elsif($i == 9) {$PERF_THRESHOLDS{'PCIeLinkGen'}[0] = $crit_list[$i];}
+				elsif($i == 10) {$PERF_THRESHOLDS{'PCIeLinkWidth'}[0] = $crit_list[$i];}
 			}		
 		}			
 	}
