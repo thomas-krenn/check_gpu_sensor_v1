@@ -2,6 +2,10 @@
 Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
 ################################################################################
 
+Version 2.3 20130610
+  * The Switch module did not work with CentOS Perl 5.8.8, therefore now
+    if/elsif statements are used.
+
 Version 2.2 20130606
   * Removing config ini files as there is no native rpm package. Now a simple
     perl hash is used for threshold configuration.
