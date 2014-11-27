@@ -262,7 +262,6 @@ The given config path is empty.
 	use warnings;
 	use nvidia::ml qw(:all);
 	use Getopt::Long qw(:config no_ignore_case);
-	use Switch 'Perl6';
 
 =head1 AUTHOR
 
