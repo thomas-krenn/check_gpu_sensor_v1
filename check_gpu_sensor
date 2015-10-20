@@ -99,7 +99,7 @@ our %PERF_THRESHOLDS = (
 sub get_version{
 	return "check_gpu_sensor version 2.3 20130610
 Copyright (C) 2011-2013 Thomas-Krenn.AG (written by Georg Schönberger)
-Current updates available via git repository git.thomas-krenn.com.
+Current updates available via GitHub https://github.com/thomas-krenn.
 Your system is using NVIDIA driver version ".get_driver_version()." with
 NVML version ".get_nvml_version();
 }
