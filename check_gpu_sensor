@@ -297,7 +297,7 @@ sub get_status_string{
 	}
 	#Collect performance values followed by thresholds
 	if($level eq "Performance"){
-		foreach my $k (keys %$curr_sensors){
+		foreach my $k (sort {lc $a cmp lc $b} keys %$curr_sensors){
 			$status_string .= $k."=".$curr_sensors->{$k};
 			#print warn and crit thresholds
 			if(exists $PERF_THRESHOLDS{$k}){
