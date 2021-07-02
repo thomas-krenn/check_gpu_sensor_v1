@@ -2,6 +2,11 @@
 Changelog for check_gpu_sensor, a Nagios/Icinga plugin to check GPU sensors
 ################################################################################
 
+Version 2.4 20210702
+  * New option --no-throttle-alarm to avoid receiving alarm in case of throttle 
+    events. Throttle events could still be present in performance data in case 
+    enabled. Default behavior not changed.
+
 Version 2.3 20130610
   * The Switch module did not work with CentOS Perl 5.8.8, therefore now
     if/elsif statements are used.

@@ -8,12 +8,12 @@
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 3 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along with
 # this program; if not, see <http://www.gnu.org/licenses/>.
 #
@@ -29,13 +29,13 @@ use warnings;
 use Getopt::Long qw(:config no_ignore_case);#case sensitive
 
 BEGIN{
-	eval{
-		require nvidia::ml;
-		nvidia::ml->import(qw(:all));
-	};
-	if($@){
-		die "Nvml library not found on system";
-	}
+        eval{
+                require nvidia::ml;
+                nvidia::ml->import(qw(:all));
+        };
+        if($@){
+                die "Nvml library not found on system";
+        }
 }
 ###############################################
 # Global Variables in the current scope
@@ -46,50 +46,50 @@ our @PERF_DATA = (); #Array of perf-data for GPU
 
 #hash keys we don't want to have in PERF_DATA
 our %EXCLUDE_LIST = (
-	deviceHandle => '1',
-	deviceID => '1',
-	devicePCIBusID => '1',
-	devicePciInfo => '1',
-	deviceComputeMode => '1',
-	PWRMgmtMode => '1',
-	OEMInforom => '1',
-	ECCInforom => '1',
-	PWRInforom => '1',
-	pendingECCMode => '1',
-	currentECCMode => '1',
-	ECCMemVolDble => '1',
-	ECCL1VolDble => '1',
-	ECCL2VolDble => '1',
-	ECCRegVolDble => '1',
-	ECCTexVolDble => '1',
-	persistenceMode => '1',
-	inforomValid => '1',
-	PCIeLinkGen => '1',
-	PCIeLinkWidth => '1',
-	clocks_throttle_reason_user_defined_clocks => '1',
-	clocks_throttle_reason_gpu_idle => '1',
-	clocks_throttle_reason_user_defined_clocks => '1',
-	clocks_throttle_reason_sw_power_cap => '1',
-	clocks_throttle_reason_hw_slowdown => '1',
-	clocks_throttle_reason_unknown => '1'
+        deviceHandle => '1',
+        deviceID => '1',
+        devicePCIBusID => '1',
+        devicePciInfo => '1',
+        deviceComputeMode => '1',
+        PWRMgmtMode => '1',
+        OEMInforom => '1',
+        ECCInforom => '1',
+        PWRInforom => '1',
+        pendingECCMode => '1',
+        currentECCMode => '1',
+        ECCMemVolDble => '1',
+        ECCL1VolDble => '1',
+        ECCL2VolDble => '1',
+        ECCRegVolDble => '1',
+        ECCTexVolDble => '1',
+        persistenceMode => '1',
+        inforomValid => '1',
+        PCIeLinkGen => '1',
+        PCIeLinkWidth => '1',
+        clocks_throttle_reason_user_defined_clocks => '1',
+        clocks_throttle_reason_gpu_idle => '1',
+        clocks_throttle_reason_user_defined_clocks => '1',
+        clocks_throttle_reason_sw_power_cap => '1',
+        clocks_throttle_reason_hw_slowdown => '1',
+        clocks_throttle_reason_unknown => '1'
 );
 
 #warning and critical default threshold levels
 our %PERF_THRESHOLDS = (
-	GPUTemperature => ['85','100'], #Temperature
-	usedMemory => ['95','99'], #Memory utilizaion
-	fanSpeed => ['80','95'], #Fan speed
-	#only single ecc errors are configurable
-	#double ecc errors are treated as discrete sensors and issue
-	#a critical status
-	ECCMemAggSgl => ['1','2'], #Dev memory ecc errors
-	ECCL1AggSgl => ['1','2'], #L1 cache ecc errors
-	ECCL2AggSgl => ['1','2'], #L2 cache ecc errors
-	ECCRegAggSgl => ['1','2'], #Dev register ecc errors
-	ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
-	PWRUsage => ['150','200'], #Power Usage
-	PCIeLinkGen => ['2'], #PCIe link generation
-	PCIeLinkWidth => ['16'], #PCIe link width
+        GPUTemperature => ['85','100'], #Temperature
+        usedMemory => ['95','99'], #Memory utilizaion
+        fanSpeed => ['80','95'], #Fan speed
+        #only single ecc errors are configurable
+        #double ecc errors are treated as discrete sensors and issue
+        #a critical status
+        ECCMemAggSgl => ['1','2'], #Dev memory ecc errors
+        ECCL1AggSgl => ['1','2'], #L1 cache ecc errors
+        ECCL2AggSgl => ['1','2'], #L2 cache ecc errors
+        ECCRegAggSgl => ['1','2'], #Dev register ecc errors
+        ECCTexAggSgl => ['1','2'], #Dev texture cache ecc errors
+        PWRUsage => ['150','200'], #Power Usage
+        PCIeLinkGen => ['2'], #PCIe link generation
+        PCIeLinkWidth => ['16'], #PCIe link width
 );
 
 ###############################################
@@ -97,19 +97,19 @@ our %PERF_THRESHOLDS = (
 # They return help messages and version information
 ###############################################
 sub get_version{
-	return "check_gpu_sensor version 2.3 20130610
+        return "check_gpu_sensor version 2.4 20210702
 Copyright (C) 2011-2013 Thomas-Krenn.AG (written by Georg Schönberger)
 Current updates available via GitHub https://github.com/thomas-krenn.
 Your system is using NVIDIA driver version ".get_driver_version()." with
 NVML version ".get_nvml_version();
 }
 sub get_usage{
-	return "Usage:
+        return "Usage:
 check_gpu_sensor -db <pci bus string> | -d <device id> | [-T <sensor type>] [-w <list of warn levels>]
-[-c <list of crit levels>] [-cf <config file path>] [-v|-vv|-vvv] [-h] [-V] [--show-na]"
+[-c <list of crit levels>] [-cf <config file path>] [-v|-vv|-vvv] [-h] [-V] [--show-na] [--no-throttle-alarm]"
 }
 sub get_help{
-	return "
+        return "
 
   [-d <device id>]
         Return information about the GPU with the given device ID. IDs
@@ -143,7 +143,7 @@ sub get_help{
        -PWRUsage
        Levels that should stay default get a 'd' assigned.
        Example:
-           check_gpu_sensor -w '75,d,d,d,d,d,d,d,d' 
+           check_gpu_sensor -w '75,d,d,d,d,d,d,d,d'
        This changes the warning level for the temperature.
   [-c <list of critical thresholds>]
        Change the default critical levels. The order of the levels
@@ -153,7 +153,7 @@ sub get_help{
        -PCIeLinkWidth
        Levels that should stay default get a 'd' assigned.
        Example:
-           check_gpu_sensor -c '100,d,d,d,d,d,d,d,d,3,16' 
+           check_gpu_sensor -c '100,d,d,d,d,d,d,d,d,3,16'
        This changes the critical level for the temperature, the PCIe link
        generation to '3' and the link width to '16'.
   [-cf <config file path>]
@@ -173,738 +173,741 @@ sub get_help{
   [-V]
        show version information
   [--show-na]
-       show sensors with value equal to N/A (means not available)";
+       show sensors with value equal to N/A (means not available)
+  [--no-throttle-alarm]
+       disable hardware throttle alarm. Only reported through perfdata in case perfdata activated for such info";
 }
 
 ###############################################
-# Helper functions 
+# Helper functions
 # They check for errors and print several structs
 # They also generate status outputs and verbose information
 ###############################################
 sub handle_error{
-	my $return = $_[0];
-	my $value = $_[1];
-	if($return == $NVML_SUCCESS){
-		return $value;	
-	}
-	else{
-		if($return == $NVML_ERROR_NOT_SUPPORTED){
-			return 'N/A';	
-		}
-		else{
-			return nvmlErrorString($return);
-		}
-	}	
+        my $return = $_[0];
+        my $value = $_[1];
+        if($return == $NVML_SUCCESS){
+                return $value;
+        }
+        else{
+                if($return == $NVML_ERROR_NOT_SUPPORTED){
+                        return 'N/A';
+                }
+                else{
+                        return nvmlErrorString($return);
+                }
+        }
 }
 
 sub print_hash{
-	my $hash_ref = shift;
-	my $show_na = shift;
-	my $string = "";
-	my $is_na = 1;
-	
-	foreach my $k (keys %{$hash_ref}) {
-		if($hash_ref->{$k} ne 'N/A'){
-			$is_na = 0;
-		}
-		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
-			next;
-		}
-		if(ref($hash_ref->{$k}) eq "SCALAR"){
-			$string .= "\t$k: $$hash_ref->{$k}\n";
-		}
-		else{
-			$string .= "\t$k: $hash_ref->{$k}\n";	
-		}		
-	}
-	#if all values are N/A, return this
-	if($is_na){
-		return 'N/A';
-	}
-	else{
-		return $string;
-	}
+        my $hash_ref = shift;
+        my $show_na = shift;
+        my $string = "";
+        my $is_na = 1;
+
+        foreach my $k (keys %{$hash_ref}) {
+                if($hash_ref->{$k} ne 'N/A'){
+                        $is_na = 0;
+                }
+                #only print N/A sensors if show all is given
+                if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
+                        next;
+                }
+                if(ref($hash_ref->{$k}) eq "SCALAR"){
+                        $string .= "\t$k: $$hash_ref->{$k}\n";
+                }
+                else{
+                        $string .= "\t$k: $hash_ref->{$k}\n";
+                }
+        }
+        #if all values are N/A, return this
+        if($is_na){
+                return 'N/A';
+        }
+        else{
+                return $string;
+        }
 }
 
 sub get_hash_values{
-	my $hash_ref = shift;#reference to device hash
-	my $show_na = shift;
-	my $string = "";
-	my $is_na = 1;
-	
-	foreach my $k (keys %{$hash_ref}) {
-		if($k eq "deviceHandle"){
-			next;#we don't want to print driver handles
-		}
-		#only print N/A sensors if show all is given
-		if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
-			next;
-		}
-		#if we found a hash, call the print_hash function
-		#if all values of a hash are N/A, the hash itself gets
-		#the string N/A assigned
-		if(ref($hash_ref->{$k}) eq 'HASH'){
-				my $hash_string = print_hash($hash_ref->{$k},$show_na);
-				if($hash_string eq 'N/A'){
-					if(defined $show_na){
-						$string .= "-$k: $hash_string\n";
-					}
-				}
-				else{
-					$string .= "-$k\n";
-					$string .= $hash_string;
-				}
-		}
-		elsif(ref($hash_ref->{$k}) eq 'SCALAR'){
-			$string .= "-$k: $$hash_ref->{$k}\n";
-		}
-		else{
-			$string .= "-$k: $hash_ref->{$k}\n";	
-		}
-	}
-	return $string;
+        my $hash_ref = shift;#reference to device hash
+        my $show_na = shift;
+        my $string = "";
+        my $is_na = 1;
+
+        foreach my $k (keys %{$hash_ref}) {
+                if($k eq "deviceHandle"){
+                        next;#we don't want to print driver handles
+                }
+                #only print N/A sensors if show all is given
+                if(!(defined $show_na) && $hash_ref->{$k} eq 'N/A'){
+                        next;
+                }
+                #if we found a hash, call the print_hash function
+                #if all values of a hash are N/A, the hash itself gets
+                #the string N/A assigned
+                if(ref($hash_ref->{$k}) eq 'HASH'){
+                                my $hash_string = print_hash($hash_ref->{$k},$show_na);
+                                if($hash_string eq 'N/A'){
+                                        if(defined $show_na){
+                                                $string .= "-$k: $hash_string\n";
+                                        }
+                                }
+                                else{
+                                        $string .= "-$k\n";
+                                        $string .= $hash_string;
+                                }
+                }
+                elsif(ref($hash_ref->{$k}) eq 'SCALAR'){
+                        $string .= "-$k: $$hash_ref->{$k}\n";
+                }
+                else{
+                        $string .= "-$k: $hash_ref->{$k}\n";
+                }
+        }
+        return $string;
 }
 
 sub get_status_string{
-	my $level = shift;
-	my $curr_sensors = shift;
-	my $verbosity = shift;
-	my $status_string = "";
+        my $level = shift;
+        my $curr_sensors = shift;
+        my $verbosity = shift;
+        my $status_string = "";
 
-	if($level ne "Warning" && $level ne "Critical"
-		&& $level ne "Performance"){
-		return;
-	}
-	if($level eq "Warning"){
-		$curr_sensors = $curr_sensors->[1];
-	}
-	if($level eq "Critical"){
-		$curr_sensors = $curr_sensors->[2];
-	}
-	my $i = 1;
-	#Collect performance data of warn and crit sensors
-	if($level eq "Warning" || $level eq "Critical"){
-		if(@$curr_sensors){
-			foreach my $sensor (@$curr_sensors){
-				$status_string .= "[".$sensor." = ".$level;
-				if($verbosity && exists $PERF_DATA[0]->{$sensor}){
-					$status_string .= " (".$PERF_DATA[0]->{$sensor}.")";	
-				}
-				$status_string .= "]";
-			}
-		}
-	}
-	#Collect performance values followed by thresholds
-	if($level eq "Performance"){
-		foreach my $k (sort {lc $a cmp lc $b} keys %$curr_sensors){
-			$status_string .= $k."=".$curr_sensors->{$k};
-			#print warn and crit thresholds
-			if(exists $PERF_THRESHOLDS{$k}){
-				$status_string .= ";".$PERF_THRESHOLDS{$k}[0];
-				$status_string .= ";".$PERF_THRESHOLDS{$k}[1].";";
-			}
-			if($i != (keys %$curr_sensors)){
-				$status_string .= " ";
-			}
-			$i++;
-		}	
-	}
-	return $status_string;
+        if($level ne "Warning" && $level ne "Critical"
+                && $level ne "Performance"){
+                return;
+        }
+        if($level eq "Warning"){
+                $curr_sensors = $curr_sensors->[1];
+        }
+        if($level eq "Critical"){
+                $curr_sensors = $curr_sensors->[2];
+        }
+        my $i = 1;
+        #Collect performance data of warn and crit sensors
+        if($level eq "Warning" || $level eq "Critical"){
+                if(@$curr_sensors){
+                        foreach my $sensor (@$curr_sensors){
+                                $status_string .= "[".$sensor." = ".$level;
+                                if($verbosity && exists $PERF_DATA[0]->{$sensor}){
+                                        $status_string .= " (".$PERF_DATA[0]->{$sensor}.")";
+                                }
+                                $status_string .= "]";
+                        }
+                }
+        }
+        #Collect performance values followed by thresholds
+        if($level eq "Performance"){
+                foreach my $k (sort {lc $a cmp lc $b} keys %$curr_sensors){
+                        $status_string .= $k."=".$curr_sensors->{$k};
+                        #print warn and crit thresholds
+                        if(exists $PERF_THRESHOLDS{$k}){
+                                $status_string .= ";".$PERF_THRESHOLDS{$k}[0];
+                                $status_string .= ";".$PERF_THRESHOLDS{$k}[1].";";
+                        }
+                        if($i != (keys %$curr_sensors)){
+                                $status_string .= " ";
+                        }
+                        $i++;
+                }
+        }
+        return $status_string;
 }
 
 sub get_verbose_string{
-	my $verbosity = shift;
-	my $device = shift;
-	my $show_na = shift;
-	my $status_string = "";
-	
-	if($verbosity == 3){
-		$status_string .= "------------- begin of debug output (-vvv is set): ------------\n";
-		$status_string .= "Nvidia Driver Version: ".get_driver_version()."\n";
-		$status_string .= "Nvidia NVML Version: ".get_nvml_version()."\n";
-		$status_string .= "Number of GPUs in system: ".get_device_count()."\n";
-		$status_string .= "Current checked GPU:\n";
-		foreach my $g (@DEVICE_LIST){
-			$status_string .= "\t-".$g->{'productName'}."\n";
-		}
-		$status_string .= "----Called sensors (incl. N/A)----\n";
-		$status_string .= get_hash_values($device,1);
-	}
-	if($verbosity == 3){
-		$status_string .= "------------- end of debug output ------------\n";
-	}
-	if($verbosity == 2 || $verbosity == 3){
-		$status_string .= get_hash_values($device,$show_na)
-	}
-	return $status_string;
+        my $verbosity = shift;
+        my $device = shift;
+        my $show_na = shift;
+        my $status_string = "";
+
+        if($verbosity == 3){
+                $status_string .= "------------- begin of debug output (-vvv is set): ------------\n";
+                $status_string .= "Nvidia Driver Version: ".get_driver_version()."\n";
+                $status_string .= "Nvidia NVML Version: ".get_nvml_version()."\n";
+                $status_string .= "Number of GPUs in system: ".get_device_count()."\n";
+                $status_string .= "Current checked GPU:\n";
+                foreach my $g (@DEVICE_LIST){
+                        $status_string .= "\t-".$g->{'productName'}."\n";
+                }
+                $status_string .= "----Called sensors (incl. N/A)----\n";
+                $status_string .= get_hash_values($device,1);
+        }
+        if($verbosity == 3){
+                $status_string .= "------------- end of debug output ------------\n";
+        }
+        if($verbosity == 2 || $verbosity == 3){
+                $status_string .= get_hash_values($device,$show_na)
+        }
+        return $status_string;
 }
 
 sub check_hash_for_perf{
-	my %hash = %{(shift)};
-	my $perf_data_ref = shift;
-	my @sensor_list = @{(shift)};
-		
-	foreach my $k (@sensor_list) {
-		#we don't want to print values present in exclude list
-		if(exists $EXCLUDE_LIST{$k}){
-			next;
-		}
-		if(ref($hash{$k}) eq 'HASH'){
-			#the param sensor_list is switched to the hash keys for the next call of check_hash
-			my @key_list = keys %{$hash{$k}};
-			$perf_data_ref = check_hash_for_perf($hash{$k},$perf_data_ref,\@key_list);
-		}
-		elsif(ref($hash{$k}) eq 'SCALAR'){
-			#found a ref to a numeric value
-			$perf_data_ref->{$k} = ${$hash{$k}};
-		}
-		#integer
-		elsif($hash{$k} =~ /^[+-]?[0-9]+$/){
-			$perf_data_ref->{$k} = $hash{$k};
-		}
-		#float
-		elsif ($hash{$k} =~ /^[-+]?[0-9]*\.?[0-9]+$/ ){
-				$perf_data_ref->{$k} = sprintf("%.2f", $hash{$k});
-		}
-	}
-	return $perf_data_ref;
+        my %hash = %{(shift)};
+        my $perf_data_ref = shift;
+        my @sensor_list = @{(shift)};
+
+        foreach my $k (@sensor_list) {
+                #we don't want to print values present in exclude list
+                if(exists $EXCLUDE_LIST{$k}){
+                        next;
+                }
+                if(ref($hash{$k}) eq 'HASH'){
+                        #the param sensor_list is switched to the hash keys for the next call of check_hash
+                        my @key_list = keys %{$hash{$k}};
+                        $perf_data_ref = check_hash_for_perf($hash{$k},$perf_data_ref,\@key_list);
+                }
+                elsif(ref($hash{$k}) eq 'SCALAR'){
+                        #found a ref to a numeric value
+                        $perf_data_ref->{$k} = ${$hash{$k}};
+                }
+                #integer
+                elsif($hash{$k} =~ /^[+-]?[0-9]+$/){
+                        $perf_data_ref->{$k} = $hash{$k};
+                }
+                #float
+                elsif ($hash{$k} =~ /^[-+]?[0-9]*\.?[0-9]+$/ ){
+                                $perf_data_ref->{$k} = sprintf("%.2f", $hash{$k});
+                }
+        }
+        return $perf_data_ref;
 }
 
 ###############################################
-# Config functions 
+# Config functions
 # They prepare the config files and adjust given values
 ###############################################
 sub read_config{
-	my $cfg_path = shift;
-	if(!defined($cfg_path)){
-		print "Error: Cannot use empty config path.";
-		exit(3);
-	}
-	
-	#read config structure back in again
-	open my $in, '<', $cfg_path or die $!;
-	my $config;
-	{
-		#turn on slurp mode, read in all data at once
-		local $/;
-		$config = eval <$in>;
-	}
-	close $in;
-	return $config;
+        my $cfg_path = shift;
+        if(!defined($cfg_path)){
+                print "Error: Cannot use empty config path.";
+                exit(3);
+        }
+
+        #read config structure back in again
+        open my $in, '<', $cfg_path or die $!;
+        my $config;
+        {
+                #turn on slurp mode, read in all data at once
+                local $/;
+                $config = eval <$in>;
+        }
+        close $in;
+        return $config;
 }
 
 sub configure_thresholds{
-	my $config = shift;
-	foreach my $k (keys %PERF_THRESHOLDS){
-		#the key is present in the config
-		if(exists($config->{$k})){
-			$PERF_THRESHOLDS{$k}[0] = $config->{$k}[0];
-			if(scalar @{$config->{$k}} > 1){
-				$PERF_THRESHOLDS{$k}[1] = $config->{$k}[1];
-			}
-		}
-	}
+        my $config = shift;
+        foreach my $k (keys %PERF_THRESHOLDS){
+                #the key is present in the config
+                if(exists($config->{$k})){
+                        $PERF_THRESHOLDS{$k}[0] = $config->{$k}[0];
+                        if(scalar @{$config->{$k}} > 1){
+                                $PERF_THRESHOLDS{$k}[1] = $config->{$k}[1];
+                        }
+                }
+        }
 }
 
 ###############################################
-# System specific functions 
+# System specific functions
 # They are used to collect information about the current system
 ###############################################
 sub get_nvml_version{
-	#Working since 3.295.41
-	my $version = get_driver_version();
-	$version =~ /(\d+)\.(\d+)/;
-	if($1 >= 295){
-		my ($return, $version) = nvmlSystemGetNVMLVersion();
-		return handle_error($return,$version);
-	}
-	else{
-		return "not yet supported";
-	}	
+        #Working since 3.295.41
+        my $version = get_driver_version();
+        $version =~ /(\d+)\.(\d+)/;
+        if($1 >= 295){
+                my ($return, $version) = nvmlSystemGetNVMLVersion();
+                return handle_error($return,$version);
+        }
+        else{
+                return "not yet supported";
+        }
 }
 
 sub get_driver_version{
-	my ($return, $version) = nvmlSystemGetDriverVersion();
-	return handle_error($return,$version);
+        my ($return, $version) = nvmlSystemGetDriverVersion();
+        return handle_error($return,$version);
 }
 
 sub get_device_count{
-	my ($return, $count) = nvmlDeviceGetCount();
-	$count = handle_error($return,$count);
-	if($return != $NVML_SUCCESS){
-		print "Error: ".$count.".\n";
-		exit(3); 
-	}
-	return $count;
+        my ($return, $count) = nvmlDeviceGetCount();
+        $count = handle_error($return,$count);
+        if($return != $NVML_SUCCESS){
+                print "Error: ".$count.".\n";
+                exit(3);
+        }
+        return $count;
 }
 
 ###############################################
-# Device specific functions 
+# Device specific functions
 # They are used to query parameters from a device
 ###############################################
 sub get_device_clock{
-	my %current_device = %{(shift)};
-	my %clock_hash;
-	my ($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
-	$clock_hash{'graphicsClock'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_SM);
-	$clock_hash{'SMClock'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_MEM);
-	$clock_hash{'memClock'} = handle_error($return,$value);
-	
-	return \%clock_hash;
+        my %current_device = %{(shift)};
+        my %clock_hash;
+        my ($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_GRAPHICS);
+        $clock_hash{'graphicsClock'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_SM);
+        $clock_hash{'SMClock'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetClockInfo($current_device{'deviceHandle'},$NVML_CLOCK_MEM);
+        $clock_hash{'memClock'} = handle_error($return,$value);
+
+        return \%clock_hash;
 }
 sub get_device_inforom{
-	my %current_device = %{(shift)};
-	my %inforom_hash;
-	my ($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_OEM);
-	$inforom_hash{'OEMInforom'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_ECC);
-	$inforom_hash{'ECCInforom'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_POWER);
-	$inforom_hash{'PWRInforom'} = handle_error($return,$value);
-	
-	return \%inforom_hash;
+        my %current_device = %{(shift)};
+        my %inforom_hash;
+        my ($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_OEM);
+        $inforom_hash{'OEMInforom'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_ECC);
+        $inforom_hash{'ECCInforom'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetInforomVersion($current_device{'deviceHandle'},$NVML_INFOROM_POWER);
+        $inforom_hash{'PWRInforom'} = handle_error($return,$value);
+
+        return \%inforom_hash;
 }
 sub get_device_ecc{
-	my %current_device = %{(shift)};
-	my %ecc_hash;
-	my ($return,$value,$value1) = nvmlDeviceGetEccMode($current_device{'deviceHandle'});
-	$ecc_hash{'currentECCMode'} = handle_error($return,$value);
-	$ecc_hash{'pendingECCMode'} = handle_error($return,$value1);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
-	$ecc_hash{'ECCMemAggSgl'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
-	$ecc_hash{'ECCMemVolDble'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
-	$ecc_hash{'ECCL1AggSgl'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
-	$ecc_hash{'ECCL1VolDble'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
-	$ecc_hash{'ECCL2AggSgl'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
-	$ecc_hash{'ECCL2VolDble'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
-	$ecc_hash{'ECCRegAggSgl'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
-	$ecc_hash{'ECCRegVolDble'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
-	$ecc_hash{'ECCTexAggSgl'} = handle_error($return,$value);
-	
-	($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
-		$NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
-	$ecc_hash{'ECCTexVolDble'} = handle_error($return,$value);
-	
-	return \%ecc_hash;
+        my %current_device = %{(shift)};
+        my %ecc_hash;
+        my ($return,$value,$value1) = nvmlDeviceGetEccMode($current_device{'deviceHandle'});
+        $ecc_hash{'currentECCMode'} = handle_error($return,$value);
+        $ecc_hash{'pendingECCMode'} = handle_error($return,$value1);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
+        $ecc_hash{'ECCMemAggSgl'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_DEVICE_MEMORY);
+        $ecc_hash{'ECCMemVolDble'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
+        $ecc_hash{'ECCL1AggSgl'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_L1_CACHE);
+        $ecc_hash{'ECCL1VolDble'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
+        $ecc_hash{'ECCL2AggSgl'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_L2_CACHE);
+        $ecc_hash{'ECCL2VolDble'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
+        $ecc_hash{'ECCRegAggSgl'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_REGISTER_FILE);
+        $ecc_hash{'ECCRegVolDble'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_CORRECTED,$NVML_AGGREGATE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
+        $ecc_hash{'ECCTexAggSgl'} = handle_error($return,$value);
+
+        ($return,$value) = nvmlDeviceGetMemoryErrorCounter($current_device{'deviceHandle'},
+                $NVML_MEMORY_ERROR_TYPE_UNCORRECTED,$NVML_VOLATILE_ECC,$NVML_MEMORY_LOCATION_TEXTURE_MEMORY);
+        $ecc_hash{'ECCTexVolDble'} = handle_error($return,$value);
+
+        return \%ecc_hash;
 }
 sub get_device_power{
-	my %current_device = %{(shift)};
-	my %power_hash;
-	my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
-	$power_hash{'PWRMgmtMode'} = handle_error($return,$value);
-	if($return == $NVML_SUCCESS &&
-		$value == $NVML_FEATURE_ENABLED){
-		($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
-		$power_hash{'PWRUsage'} = handle_error($return,$value);
-		if($return == $NVML_SUCCESS){
-			#convert mW to W
-			$power_hash{'PWRUsage'} /= 1000;
-		}
-	}
-	return \%power_hash;
+        my %current_device = %{(shift)};
+        my %power_hash;
+        my ($return,$value) = nvmlDeviceGetPowerManagementMode($current_device{'deviceHandle'});
+        $power_hash{'PWRMgmtMode'} = handle_error($return,$value);
+        if($return == $NVML_SUCCESS &&
+                $value == $NVML_FEATURE_ENABLED){
+                ($return,$value) = nvmlDeviceGetPowerUsage($current_device{'deviceHandle'});
+                $power_hash{'PWRUsage'} = handle_error($return,$value);
+                if($return == $NVML_SUCCESS){
+                        #convert mW to W
+                        $power_hash{'PWRUsage'} /= 1000;
+                }
+        }
+        return \%power_hash;
 }
 
 sub get_persistence_mode{
-	my %current_device = %{(shift)};
-	my ($return,$value) = nvmlDeviceGetPersistenceMode($current_device{'deviceHandle'});
-	if($return == $NVML_SUCCESS){
-		if($value == $NVML_FEATURE_ENABLED){
-			return 'enabled';
-		}
-		if($value == $NVML_FEATURE_DISABLED){
-			return 'disabled';
-		}
-	}
-	elsif($return == $NVML_ERROR_NOT_SUPPORTED){
-		return 'N/A';
-	}
-	else{
-		return nvmlErrorString($return);
-	}
+        my %current_device = %{(shift)};
+        my ($return,$value) = nvmlDeviceGetPersistenceMode($current_device{'deviceHandle'});
+        if($return == $NVML_SUCCESS){
+                if($value == $NVML_FEATURE_ENABLED){
+                        return 'enabled';
+                }
+                if($value == $NVML_FEATURE_DISABLED){
+                        return 'disabled';
+                }
+        }
+        elsif($return == $NVML_ERROR_NOT_SUPPORTED){
+                return 'N/A';
+        }
+        else{
+                return nvmlErrorString($return);
+        }
 }
 
 sub get_inforom_validation{
-	my %current_device = %{(shift)};
-	my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
-	if($return == $NVML_SUCCESS){
-		return 'valid';
-	}
-	elsif($return == $NVML_ERROR_NOT_SUPPORTED){
-		return 'N/A';
-	}
-	else{
-		return nvmlErrorString($return);
-	}
+        my %current_device = %{(shift)};
+        my $return = nvmlDeviceValidateInforom($current_device{'deviceHandle'});
+        if($return == $NVML_SUCCESS){
+                return 'valid';
+        }
+        elsif($return == $NVML_ERROR_NOT_SUPPORTED){
+                return 'N/A';
+        }
+        else{
+                return nvmlErrorString($return);
+        }
 }
 
 sub get_throttle_reasons{
-	my %current_device = %{(shift)};
-	my %throttleReasons = (
-		$nvmlClocksThrottleReasonGpuIdle => "clocks_throttle_reason_gpu_idle",
-		$nvmlClocksThrottleReasonUserDefinedClocks => "clocks_throttle_reason_user_defined_clocks",
-		$nvmlClocksThrottleReasonSwPowerCap => "clocks_throttle_reason_sw_power_cap",
-		$nvmlClocksThrottleReasonHwSlowdown => "clocks_throttle_reason_hw_slowdown",
-		$nvmlClocksThrottleReasonUnknown => "clocks_throttle_reason_unknown"
-	);
-	my %throttle_hash;
-	my $clocksThrottleReasons;
-	#check the supported throttle reasons
-	my ($return,$supportedClocksThrottleReasons) = nvmlDeviceGetSupportedClocksThrottleReasons($current_device{'deviceHandle'});
-	#FIXME this should not be necessary
-	my $supported_cpy = sprintf("%x16",$supportedClocksThrottleReasons);
-	#get the current active throttles
-	if($return == $NVML_SUCCESS){
-		($return,$clocksThrottleReasons) = nvmlDeviceGetCurrentClocksThrottleReasons($current_device{'deviceHandle'});
-	}
-	if ($return == $NVML_SUCCESS){
-		#the mask is not empty
-		if($clocksThrottleReasons){
-			foreach my $k(keys %throttleReasons){
-				#the curr mask is supported
-				if($k & $supportedClocksThrottleReasons){
-					#the curr mask is active
-					if($k & $clocksThrottleReasons){
-						$throttle_hash{$throttleReasons{$k}} = 1;
-					}
-				}
-			}
-			#TODO: What if some unknown bits are set?
-			#$throttle_hash{'clocks_throttle_reason_unknown'} = 1;
-		}
-		return \%throttle_hash;
-	}
-	if($return == $NVML_ERROR_NOT_SUPPORTED){
-		return 'N/A';
-	}
-	else{
-		return nvmlErrorString($return);
-	}
+        my %current_device = %{(shift)};
+        my %throttleReasons = (
+                $nvmlClocksThrottleReasonGpuIdle => "clocks_throttle_reason_gpu_idle",
+                $nvmlClocksThrottleReasonUserDefinedClocks => "clocks_throttle_reason_user_defined_clocks",
+                $nvmlClocksThrottleReasonSwPowerCap => "clocks_throttle_reason_sw_power_cap",
+                $nvmlClocksThrottleReasonHwSlowdown => "clocks_throttle_reason_hw_slowdown",
+                $nvmlClocksThrottleReasonUnknown => "clocks_throttle_reason_unknown"
+        );
+        my %throttle_hash;
+        my $clocksThrottleReasons;
+        #check the supported throttle reasons
+        my ($return,$supportedClocksThrottleReasons) = nvmlDeviceGetSupportedClocksThrottleReasons($current_device{'deviceHandle'});
+        #FIXME this should not be necessary
+        my $supported_cpy = sprintf("%x16",$supportedClocksThrottleReasons);
+        #get the current active throttles
+        if($return == $NVML_SUCCESS){
+                ($return,$clocksThrottleReasons) = nvmlDeviceGetCurrentClocksThrottleReasons($current_device{'deviceHandle'});
+        }
+        if ($return == $NVML_SUCCESS){
+                #the mask is not empty
+                if($clocksThrottleReasons){
+                        foreach my $k(keys %throttleReasons){
+                                #the curr mask is supported
+                                if($k & $supportedClocksThrottleReasons){
+                                        #the curr mask is active
+                                        if($k & $clocksThrottleReasons){
+                                                $throttle_hash{$throttleReasons{$k}} = 1;
+                                        }
+                                }
+                        }
+                        #TODO: What if some unknown bits are set?
+                        #$throttle_hash{'clocks_throttle_reason_unknown'} = 1;
+                }
+                return \%throttle_hash;
+        }
+        if($return == $NVML_ERROR_NOT_SUPPORTED){
+                return 'N/A';
+        }
+        else{
+                return nvmlErrorString($return);
+        }
 }
 
 sub get_device_memory{
-	my %current_device = %{(shift)};
-	my $used_memory;
-	my ($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
-	my $memory_hash = handle_error($return,$value);
-	if($return == $NVML_SUCCESS){
-		$used_memory = 100 * ($memory_hash->{'used'}) / ($memory_hash->{'total'});
-		return $used_memory;
-	}
-	else{
-		return $memory_hash;
-	}
+        my %current_device = %{(shift)};
+        my $used_memory;
+        my ($return,$value) = nvmlDeviceGetMemoryInfo($current_device{'deviceHandle'});
+        my $memory_hash = handle_error($return,$value);
+        if($return == $NVML_SUCCESS){
+                $used_memory = 100 * ($memory_hash->{'used'}) / ($memory_hash->{'total'});
+                return $used_memory;
+        }
+        else{
+                return $memory_hash;
+        }
 }
 
 sub get_pcie_link{
-	my %current_device = %{(shift)};
-	my %pcie_hash;
-	my ($return,$value) = nvmlDeviceGetMaxPcieLinkGeneration($current_device{'deviceHandle'});
-	$pcie_hash{'PCIeLinkGen'} = handle_error($return,$value);
-	($return,$value) = nvmlDeviceGetMaxPcieLinkWidth($current_device{'deviceHandle'});
-	$pcie_hash{'PCIeLinkWidth'} = handle_error($return,$value);
-	return \%pcie_hash;
+        my %current_device = %{(shift)};
+        my %pcie_hash;
+        my ($return,$value) = nvmlDeviceGetMaxPcieLinkGeneration($current_device{'deviceHandle'});
+        $pcie_hash{'PCIeLinkGen'} = handle_error($return,$value);
+        ($return,$value) = nvmlDeviceGetMaxPcieLinkWidth($current_device{'deviceHandle'});
+        $pcie_hash{'PCIeLinkWidth'} = handle_error($return,$value);
+        return \%pcie_hash;
 }
 
 sub get_device_util{
-	my %current_device = %{(shift)};
-	my %util_hash;
-	my ($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
-	my $ret_hash = handle_error($return,$value);
-	if($return == $NVML_SUCCESS){
-		$util_hash{'GPUUtilRate'} = $ret_hash->{'gpu'};
-		$util_hash{'memUtilRate'} = $ret_hash->{'memory'};
-		return \%util_hash;
-	}
-	else{
-		return $ret_hash;
-	}
+        my %current_device = %{(shift)};
+        my %util_hash;
+        my ($return,$value) = nvmlDeviceGetUtilizationRates($current_device{'deviceHandle'});
+        my $ret_hash = handle_error($return,$value);
+        if($return == $NVML_SUCCESS){
+                $util_hash{'GPUUtilRate'} = $ret_hash->{'gpu'};
+                $util_hash{'memUtilRate'} = $ret_hash->{'memory'};
+                return \%util_hash;
+        }
+        else{
+                return $ret_hash;
+        }
 }
 
 sub get_device_status{
-	my $current_ref = shift;
-	my %current_device = %$current_ref;
-	my ($return, $value) = 0;
-	
-	($return,$value) = nvmlDeviceGetName($current_device{'deviceHandle'});
-	$current_device{'productName'} = (handle_error($return,$value));
-	
-	($return,$value) = nvmlDeviceGetComputeMode($current_device{'deviceHandle'});
-	$current_device{'deviceComputeMode'} = (handle_error($return,$value));	
-	
-	($return,$value) = nvmlDeviceGetFanSpeed($current_device{'deviceHandle'});
-	$current_device{'fanSpeed'} = (handle_error($return,$value));
-	
-	($return,$value) = nvmlDeviceGetTemperature($current_device{'deviceHandle'},$NVML_TEMPERATURE_GPU);
-	$current_device{'GPUTemperature'} = (handle_error($return,$value));
-		
-	($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
-	$current_device{'devicePciInfo'} = (handle_error($return,$value));
-	
-	$current_device{'utilizationRates'} = get_device_util($current_ref);
-	
-	$return = get_device_clock($current_ref);	
-	$current_device{'nvmlClockInfo'} = $return;
-	
-	$return = get_device_inforom($current_ref);	
-	$current_device{'nvmlDeviceInforom'} = $return;
-	
-	$return = get_device_ecc($current_ref);	
-	$current_device{'nvmlDeviceEccInfos'} = $return;
-	
-	$return = get_device_power($current_ref);	
-	$current_device{'nvmlDevicePowerInfos'} = $return;
-	
-	$return = get_device_memory($current_ref);
-	$current_device{'usedMemory'} = $return;
-	
-	$current_device{'persistenceMode'} = get_persistence_mode($current_ref);
-	
-	$current_device{'inforomValid'} = get_inforom_validation($current_ref);
-	
-	$current_device{'throttleReasons'} = get_throttle_reasons($current_ref);
-	
-	$current_device{'PCIeLink'} = get_pcie_link($current_ref);
-	
-	return \%current_device;
+        my $current_ref = shift;
+        my %current_device = %$current_ref;
+        my ($return, $value) = 0;
+
+        ($return,$value) = nvmlDeviceGetName($current_device{'deviceHandle'});
+        $current_device{'productName'} = (handle_error($return,$value));
+
+        ($return,$value) = nvmlDeviceGetComputeMode($current_device{'deviceHandle'});
+        $current_device{'deviceComputeMode'} = (handle_error($return,$value));
+
+        ($return,$value) = nvmlDeviceGetFanSpeed($current_device{'deviceHandle'});
+        $current_device{'fanSpeed'} = (handle_error($return,$value));
+
+        ($return,$value) = nvmlDeviceGetTemperature($current_device{'deviceHandle'},$NVML_TEMPERATURE_GPU);
+        $current_device{'GPUTemperature'} = (handle_error($return,$value));
+
+        ($return,$value) = nvmlDeviceGetPciInfo($current_device{'deviceHandle'});
+        $current_device{'devicePciInfo'} = (handle_error($return,$value));
+
+        $current_device{'utilizationRates'} = get_device_util($current_ref);
+
+        $return = get_device_clock($current_ref);
+        $current_device{'nvmlClockInfo'} = $return;
+
+        $return = get_device_inforom($current_ref);
+        $current_device{'nvmlDeviceInforom'} = $return;
+
+        $return = get_device_ecc($current_ref);
+        $current_device{'nvmlDeviceEccInfos'} = $return;
+
+        $return = get_device_power($current_ref);
+        $current_device{'nvmlDevicePowerInfos'} = $return;
+
+        $return = get_device_memory($current_ref);
+        $current_device{'usedMemory'} = $return;
+
+        $current_device{'persistenceMode'} = get_persistence_mode($current_ref);
+
+        $current_device{'inforomValid'} = get_inforom_validation($current_ref);
+
+        $current_device{'throttleReasons'} = get_throttle_reasons($current_ref);
+
+        $current_device{'PCIeLink'} = get_pcie_link($current_ref);
+
+        return \%current_device;
 }
 ###############################################
-# Overall device functions 
+# Overall device functions
 # They collect functions for a GPU in the current system
 ###############################################
 sub get_all_device_status{
-	my $device_id = shift;
-	my $device_bus = shift;
-	
-	my ($return, $handle);
-	my $count = get_device_count();
-	if($count == 0){
-		print "Error: No NVIDIA device found in current system.\n";
-		exit(3);
-	}
-	if($device_bus ne ''){
-		($return, $handle) = nvmlDeviceGetHandleByPciBusId($device_bus);
-		if($return != $NVML_SUCCESS){
-			print "Error: Cannot get handle for device bus ID: ".nvmlErrorString($return)."\n";
-			return "NOK";
-		}
-	}
-	else{
-		if($device_id != -1){
-			($return, $handle) = nvmlDeviceGetHandleByIndex($device_id);
-			if($return != $NVML_SUCCESS){
-				print "Error: Cannot get handle for device: ".nvmlErrorString($return)."\n";
-				return "NOK";
-			}
-		}
-	}
-	my %gpu_h;
-	my $gpu_ref = \%gpu_h;
+        my $device_id = shift;
+        my $device_bus = shift;
 
-	if($device_id != -1){
-		$gpu_h{'deviceID'} = $device_id;
-	}
-	if($device_bus ne ''){
-		$gpu_h{'devicePCIBusID'} = $device_bus;
-	}
-	$gpu_h{'deviceHandle'} = $handle;
-	#fetching gpu status			
-	$gpu_ref = get_device_status(\%gpu_h);
-	push(@DEVICE_LIST,$gpu_ref);
+        my ($return, $handle);
+        my $count = get_device_count();
+        if($count == 0){
+                print "Error: No NVIDIA device found in current system.\n";
+                exit(3);
+        }
+        if($device_bus ne ''){
+                ($return, $handle) = nvmlDeviceGetHandleByPciBusId($device_bus);
+                if($return != $NVML_SUCCESS){
+                        print "Error: Cannot get handle for device bus ID: ".nvmlErrorString($return)."\n";
+                        return "NOK";
+                }
+        }
+        else{
+                if($device_id != -1){
+                        ($return, $handle) = nvmlDeviceGetHandleByIndex($device_id);
+                        if($return != $NVML_SUCCESS){
+                                print "Error: Cannot get handle for device: ".nvmlErrorString($return)."\n";
+                                return "NOK";
+                        }
+                }
+        }
+        my %gpu_h;
+        my $gpu_ref = \%gpu_h;
+
+        if($device_id != -1){
+                $gpu_h{'deviceID'} = $device_id;
+        }
+        if($device_bus ne ''){
+                $gpu_h{'devicePCIBusID'} = $device_bus;
+        }
+        $gpu_h{'deviceHandle'} = $handle;
+        #fetching gpu status
+        $gpu_ref = get_device_status(\%gpu_h);
+        push(@DEVICE_LIST,$gpu_ref);
 }
 
 #parses the device hashes and collects the perf data (only numeric values)
 #into arrays
 sub collect_perf_data{
-	
-	my $sensor_list_ref = shift;
-	my @sensor_list = ();
-		
-	foreach my $device (@DEVICE_LIST){
-		#fetch the desired sensors
-		if(@$sensor_list_ref){
-			@sensor_list = split(/,/, join(',', @$sensor_list_ref));
-		}
-		else{
-			#if no sensor is given via -T, we dump all
-			@sensor_list = keys %$device;
-		}
-		my %dev_perf_data = ();
-		my $dev_data_ref = \%dev_perf_data;
-		$dev_data_ref = check_hash_for_perf($device,$dev_data_ref,\@sensor_list);
-		push(@PERF_DATA,$dev_data_ref);#push device perf data to system array
-	}	
+
+        my $sensor_list_ref = shift;
+        my @sensor_list = ();
+
+        foreach my $device (@DEVICE_LIST){
+                #fetch the desired sensors
+                if(@$sensor_list_ref){
+                        @sensor_list = split(/,/, join(',', @$sensor_list_ref));
+                }
+                else{
+                        #if no sensor is given via -T, we dump all
+                        @sensor_list = keys %$device;
+                }
+                my %dev_perf_data = ();
+                my $dev_data_ref = \%dev_perf_data;
+                $dev_data_ref = check_hash_for_perf($device,$dev_data_ref,\@sensor_list);
+                push(@PERF_DATA,$dev_data_ref);#push device perf data to system array
+        }
 }
 
 #checks if the given performance data is in its rangens
 sub check_perf_threshold{
-	my @warn_list = @{(shift)};
-	my @crit_list = @{(shift)};
-	my @status_level = ("OK");
-	my @warn_level = ();#warning sensors
-	my @crit_level = ();#crit sensors
-	
-	my $i = 0;
-	if(@warn_list){
-		@warn_list = split(/,/, join(',', @warn_list));
-		for ($i = 0; $i < @warn_list; $i++){
-			#everything, except that values that should stay default, get new values
-			#e.g. -w d,15,60 changes the warning level for sensor 2 and 3 but not for 1
-			if($warn_list[$i] ne 'd'){
-				if($i == 0) {$PERF_THRESHOLDS{'GPUTemperature'}[0] = $warn_list[$i];}
-				elsif($i == 1) {$PERF_THRESHOLDS{'usedMemory'}[0] = $warn_list[$i];}
-				elsif($i == 2) {$PERF_THRESHOLDS{'fanSpeed'}[0] = $warn_list[$i];}
-				elsif($i == 3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[0] = $warn_list[$i];}
-				elsif($i == 4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[0] = $warn_list[$i];}
-				elsif($i == 5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[0] = $warn_list[$i];}
-				elsif($i == 6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i];}
-				elsif($i == 7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i];}
-				elsif($i == 8) {$PERF_THRESHOLDS{'PWRUsage'}[0] = $warn_list[$i];}
-			}		
-		}			
-	}
-	if(@crit_list){
-		@crit_list = split(/,/, join(',', @crit_list));
-		for ($i = 0; $i < @crit_list; $i++){
-			if($crit_list[$i] ne 'd'){
-				if($i == 0) {$PERF_THRESHOLDS{'GPUTemperature'}[1] = $crit_list[$i];}
-				elsif($i == 1) {$PERF_THRESHOLDS{'usedMemory'}[1] = $crit_list[$i];}
-				elsif($i == 2) {$PERF_THRESHOLDS{'fanSpeed'}[1] = $crit_list[$i];}
-				elsif($i == 3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[1] = $crit_list[$i];}
-				elsif($i == 4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[1] = $crit_list[$i];}
-				elsif($i == 5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[1] = $crit_list[$i];}
-				elsif($i == 6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i];}
-				elsif($i == 7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i];}
-				elsif($i == 8) {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i];}
-				#configure thresholds here, but the sensors are treated as discrete
-				elsif($i == 9) {$PERF_THRESHOLDS{'PCIeLinkGen'}[0] = $crit_list[$i];}
-				elsif($i == 10) {$PERF_THRESHOLDS{'PCIeLinkWidth'}[0] = $crit_list[$i];}
-			}		
-		}			
-	}
-	#fetch the perfdata of the gpu
-	my $perf_hash = $PERF_DATA[0];
-	
-	foreach my $k (keys %$perf_hash){
-		if(exists $PERF_THRESHOLDS{$k}){
-			#warning level
-			if($perf_hash->{$k} >= $PERF_THRESHOLDS{$k}[0]){
-				$status_level[0] = "Warning";
-				push(@warn_level,$k);
-			}
-			#critival level
-			if($perf_hash->{$k} >= $PERF_THRESHOLDS{$k}[1]){
-				$status_level[0] = "Critical";
-				pop(@warn_level);#as it is critical, remove it from warning
-				push(@crit_level,$k);
-			}
-		}		
-	}
-	push(@status_level,\@warn_level);
-	push(@status_level,\@crit_level);
-	
-	return \@status_level;
+        my @warn_list = @{(shift)};
+        my @crit_list = @{(shift)};
+        my @status_level = ("OK");
+        my @warn_level = ();#warning sensors
+        my @crit_level = ();#crit sensors
+
+        my $i = 0;
+        if(@warn_list){
+                @warn_list = split(/,/, join(',', @warn_list));
+                for ($i = 0; $i < @warn_list; $i++){
+                        #everything, except that values that should stay default, get new values
+                        #e.g. -w d,15,60 changes the warning level for sensor 2 and 3 but not for 1
+                        if($warn_list[$i] ne 'd'){
+                                if($i == 0) {$PERF_THRESHOLDS{'GPUTemperature'}[0] = $warn_list[$i];}
+                                elsif($i == 1) {$PERF_THRESHOLDS{'usedMemory'}[0] = $warn_list[$i];}
+                                elsif($i == 2) {$PERF_THRESHOLDS{'fanSpeed'}[0] = $warn_list[$i];}
+                                elsif($i == 3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[0] = $warn_list[$i];}
+                                elsif($i == 4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[0] = $warn_list[$i];}
+                                elsif($i == 5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[0] = $warn_list[$i];}
+                                elsif($i == 6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[0] = $warn_list[$i];}
+                                elsif($i == 7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[0] = $warn_list[$i];}
+                                elsif($i == 8) {$PERF_THRESHOLDS{'PWRUsage'}[0] = $warn_list[$i];}
+                        }
+                }
+        }
+        if(@crit_list){
+                @crit_list = split(/,/, join(',', @crit_list));
+                for ($i = 0; $i < @crit_list; $i++){
+                        if($crit_list[$i] ne 'd'){
+                                if($i == 0) {$PERF_THRESHOLDS{'GPUTemperature'}[1] = $crit_list[$i];}
+                                elsif($i == 1) {$PERF_THRESHOLDS{'usedMemory'}[1] = $crit_list[$i];}
+                                elsif($i == 2) {$PERF_THRESHOLDS{'fanSpeed'}[1] = $crit_list[$i];}
+                                elsif($i == 3) {$PERF_THRESHOLDS{'ECCMemAggSgl'}[1] = $crit_list[$i];}
+                                elsif($i == 4) {$PERF_THRESHOLDS{'ECCL1AggSgl'}[1] = $crit_list[$i];}
+                                elsif($i == 5) {$PERF_THRESHOLDS{'ECCL2AggSgl'}[1] = $crit_list[$i];}
+                                elsif($i == 6) {$PERF_THRESHOLDS{'ECCRegAggSgl'}[1] = $crit_list[$i];}
+                                elsif($i == 7) {$PERF_THRESHOLDS{'ECCTexAggSgl'}[1] = $crit_list[$i];}
+                                elsif($i == 8) {$PERF_THRESHOLDS{'PWRUsage'}[1] = $crit_list[$i];}
+                                #configure thresholds here, but the sensors are treated as discrete
+                                elsif($i == 9) {$PERF_THRESHOLDS{'PCIeLinkGen'}[0] = $crit_list[$i];}
+                                elsif($i == 10) {$PERF_THRESHOLDS{'PCIeLinkWidth'}[0] = $crit_list[$i];}
+                        }
+                }
+        }
+        #fetch the perfdata of the gpu
+        my $perf_hash = $PERF_DATA[0];
+
+        foreach my $k (keys %$perf_hash){
+                if(exists $PERF_THRESHOLDS{$k}){
+                        #warning level
+                        if($perf_hash->{$k} >= $PERF_THRESHOLDS{$k}[0]){
+                                $status_level[0] = "Warning";
+                                push(@warn_level,$k);
+                        }
+                        #critival level
+                        if($perf_hash->{$k} >= $PERF_THRESHOLDS{$k}[1]){
+                                $status_level[0] = "Critical";
+                                pop(@warn_level);#as it is critical, remove it from warning
+                                push(@crit_level,$k);
+                        }
+                }
+        }
+        push(@status_level,\@warn_level);
+        push(@status_level,\@crit_level);
+
+        return \@status_level;
 }
 
 #check the discrete sensors, they just trigger a certain status level
 sub check_discrete_sensors{
-	my @status_level = @{(shift)};#the current status list
-	#fetch the gpu data
-	my $dev_data_ref = $DEVICE_LIST[0];
-	#check for double ecc errors
-	foreach my $k (keys %{$dev_data_ref->{'nvmlDeviceEccInfos'}}){
-		if($k =~ m/.*Dble/){
-			#skip N/A sensors	
-			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} eq 'N/A'){
-				next;
-			}
-			if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
-				$status_level[0] = "Critical";
-				#add key to critical array
-				push(@{$status_level[2]},$k);
-			}
-		}
-	}
-	#check if persistence mode is available and enabled
-	if(exists($dev_data_ref->{'persistenceMode'}) && 
-		$dev_data_ref->{'persistenceMode'} ne 'N/A'){
-		if($dev_data_ref->{'persistenceMode'} ne 'enabled'){
-			#ensure to not drop an already Critical level
-			if($status_level[0] eq 'OK'){
-				$status_level[0] = "Warning";
-			}
-			push(@{$status_level[1]},'persistenceMode');
-		}
-	}
-	#check if inforom checksum is valid
-	if(exists($dev_data_ref->{'inforomValid'}) &&
-		$dev_data_ref->{'inforomValid'} ne 'N/A'){
-		if($dev_data_ref->{'inforomValid'} ne 'valid'){
-			$status_level[0] = "Critical";
-			push(@{$status_level[2]},'inforomValid');
-		}
-	}
-	#check if we have a hardware throttle
-	if(exists($dev_data_ref->{'throttleReasons'}) &&
-		$dev_data_ref->{'throttleReasons'} ne 'N/A'){
-		#the throttle hash is active
-		if(exists($dev_data_ref->{'throttleReasons'}{'clocks_throttle_reason_hw_slowdown'}) ||
-			exists($dev_data_ref->{'throttleReasons'}{'clocks_throttle_reason_unknown'})){
-			$status_level[0] = "Critical";
-			push(@{$status_level[2]},'throttleReasons');
-		}
-	}
-	#check the PCIe link settings
-	if(exists($dev_data_ref->{'PCIeLink'}) &&
-		$dev_data_ref->{'PCIeLink'} ne 'N/A'){
-		if($dev_data_ref->{'PCIeLink'}->{'PCIeLinkGen'} ne 'N/A' &&
-		$dev_data_ref->{'PCIeLink'}->{'PCIeLinkGen'} ne $PERF_THRESHOLDS{'PCIeLinkGen'}[0]){
-			$status_level[0] = "Critical";
-			push(@{$status_level[2]},'PCIeLinkGen');
-		}
-	}
-	if(exists($dev_data_ref->{'PCIeLink'}) &&
-		$dev_data_ref->{'PCIeLink'} ne 'N/A'){
-		if($dev_data_ref->{'PCIeLink'}->{'PCIeLinkWidth'} ne 'N/A' &&
-		$dev_data_ref->{'PCIeLink'}->{'PCIeLinkWidth'} ne $PERF_THRESHOLDS{'PCIeLinkWidth'}[0]){
-			$status_level[0] = "Critical";
-			push(@{$status_level[2]},'PCIeLinkWidth');
-		}
-	}
-	
-	return \@status_level;
+        my @status_level = @{(shift)};#the current status list
+	my $no_throttle_alarm = shift;
+        #fetch the gpu data
+        my $dev_data_ref = $DEVICE_LIST[0];
+        #check for double ecc errors
+        foreach my $k (keys %{$dev_data_ref->{'nvmlDeviceEccInfos'}}){
+                if($k =~ m/.*Dble/){
+                        #skip N/A sensors
+                        if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} eq 'N/A'){
+                                next;
+                        }
+                        if($dev_data_ref->{'nvmlDeviceEccInfos'}->{$k} > 0){
+                                $status_level[0] = "Critical";
+                                #add key to critical array
+                                push(@{$status_level[2]},$k);
+                        }
+                }
+        }
+        #check if persistence mode is available and enabled
+        if(exists($dev_data_ref->{'persistenceMode'}) &&
+                $dev_data_ref->{'persistenceMode'} ne 'N/A'){
+                if($dev_data_ref->{'persistenceMode'} ne 'enabled'){
+                        #ensure to not drop an already Critical level
+                        if($status_level[0] eq 'OK'){
+                                $status_level[0] = "Warning";
+                        }
+                        push(@{$status_level[1]},'persistenceMode');
+                }
+        }
+        #check if inforom checksum is valid
+        if(exists($dev_data_ref->{'inforomValid'}) &&
+                $dev_data_ref->{'inforomValid'} ne 'N/A'){
+                if($dev_data_ref->{'inforomValid'} ne 'valid'){
+                        $status_level[0] = "Critical";
+                        push(@{$status_level[2]},'inforomValid');
+                }
+        }
+        #check if we have a hardware throttle
+        if(not $no_throttle_alarm && exists($dev_data_ref->{'throttleReasons'}) &&
+                $dev_data_ref->{'throttleReasons'} ne 'N/A'){
+                #the throttle hash is active
+                if(exists($dev_data_ref->{'throttleReasons'}{'clocks_throttle_reason_hw_slowdown'}) ||
+                        exists($dev_data_ref->{'throttleReasons'}{'clocks_throttle_reason_unknown'})){
+                        $status_level[0] = "Critical";
+                        push(@{$status_level[2]},'throttleReasons');
+                }
+        }
+        #check the PCIe link settings
+        if(exists($dev_data_ref->{'PCIeLink'}) &&
+                $dev_data_ref->{'PCIeLink'} ne 'N/A'){
+                if($dev_data_ref->{'PCIeLink'}->{'PCIeLinkGen'} ne 'N/A' &&
+                $dev_data_ref->{'PCIeLink'}->{'PCIeLinkGen'} ne $PERF_THRESHOLDS{'PCIeLinkGen'}[0]){
+                        $status_level[0] = "Critical";
+                        push(@{$status_level[2]},'PCIeLinkGen');
+                }
+        }
+        if(exists($dev_data_ref->{'PCIeLink'}) &&
+                $dev_data_ref->{'PCIeLink'} ne 'N/A'){
+                if($dev_data_ref->{'PCIeLink'}->{'PCIeLinkWidth'} ne 'N/A' &&
+                $dev_data_ref->{'PCIeLink'}->{'PCIeLinkWidth'} ne $PERF_THRESHOLDS{'PCIeLinkWidth'}[0]){
+                        $status_level[0] = "Critical";
+                        push(@{$status_level[2]},'PCIeLinkWidth');
+                }
+        }
+
+        return \@status_level;
 }
 
 ###############################################
@@ -912,100 +915,102 @@ sub check_discrete_sensors{
 # Command line processing and device status collection
 ###############################################
 MAIN: {
-	my ($config_file,$show_na);
-	my @sensor_list = ();#query a specific sensor
-	my @warn_threshold = ();#change thresholds for performance data
-	my @crit_threshold = ();
-	my $verbosity = 0;
-	my $device_id = -1;#the desired gpu device to query
-	my $device_bus = '';#device bus information
-	
-	#Initialize nvml library
-	my $result = nvmlInit();
-	if($result != $NVML_SUCCESS){
-		print "Debug: NVML initialization failed.\n";
-		print "Error: ".nvmlErrorString($result).".\n";
-		exit(3);
-	}
-	
-	#Parse command line options
-	if( !(Getopt::Long::GetOptions(
-		'h|help'	=>
-		sub{print get_version();
-				print  "\n";
-				print get_usage();
-				print "\n";
-				print get_help()."\n";
-				exit(0);
-		},
-		'V|version'	=>
-		sub{print get_version()."\n";
-				exit(0);
-		},
-		'd|device=i'	=> \$device_id,
-		'db|device-bus=s'	=> \$device_bus,
-		'v|verbosity'	=>	\$verbosity,
-		'vv'			=> sub{$verbosity=2},
-		'vvv'			=> sub{$verbosity=3},
-		'T|sensors=s' => \@sensor_list,
-		'w|warning=s' => \@warn_threshold,
-		'c|critical=s' => \@crit_threshold,
-		'show-na'	=> \$show_na,
-		'cf|config=s' => \$config_file,
-	))){
-		print get_usage()."\n";
-		exit(1);
-	}
-	if(@ARGV){
-		#we don't want any unused command line arguments
-		print get_usage()."\n";
-		exit(3);
-	}
+        my ($config_file,$show_na,$no_throttle_alarm);
+        my @sensor_list = ();#query a specific sensor
+        my @warn_threshold = ();#change thresholds for performance data
+        my @crit_threshold = ();
+        my $verbosity = 0;
+        my $device_id = -1;#the desired gpu device to query
+        my $device_bus = '';#device bus information
 
-	#the device ID is not present 
-	if($device_id == -1 && $device_bus eq ''){
-		print "Error: Valid PCI bus string or device ID is required.\n";
-		print get_usage()."\n";
-		exit(3);
-	}
-	
-	#Collect the informations about the device in the system
-	if( (get_all_device_status($device_id,$device_bus)) eq "NOK"){
-		print "Ensure to use a valid device id or device bus string.\n";
-		exit(3);
-	}
-	
-	#Read a given config and change thresholds
-	if($config_file){
-		my $conf = read_config($config_file);
-		configure_thresholds($conf);
-	}
-	
-	#TODO Is the sensor list only for performance data valid?
-	collect_perf_data(\@sensor_list);
-	my $status_level;
-	$status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
-	$status_level = check_discrete_sensors($status_level);
-	#check return values of threshold and discrete sensor function
-	if($status_level->[0] eq "Critical"){
-		$EXIT_CODE = 2;#Critical
-	}
-	if($status_level->[0] eq "Warning"){
-		$EXIT_CODE = 1;#Warning
-	}
-	print $status_level->[0]." - ".$DEVICE_LIST[0]->{'productName'}." ";
-	print get_status_string("Critical",$status_level,$verbosity);
-	print get_status_string("Warning",$status_level,$verbosity);
-	print "|";
-	print get_status_string("Performance",$PERF_DATA[0]);
-	print "\n".get_verbose_string($verbosity,$DEVICE_LIST[0],$show_na);
+        #Initialize nvml library
+        my $result = nvmlInit();
+        if($result != $NVML_SUCCESS){
+                print "Debug: NVML initialization failed.\n";
+                print "Error: ".nvmlErrorString($result).".\n";
+                exit(3);
+        }
 
-	#shutdown nvml library
-	$result = nvmlShutdown();
-	if($result != $NVML_SUCCESS){
-		print "Debug: NVML shutdown failed.\n";
-		print "Error: ".nvmlErrorString($result).".\n";
-		exit(3);
-	}
-	exit($EXIT_CODE);	
+        #Parse command line options
+        if( !(Getopt::Long::GetOptions(
+                'h|help'        =>
+                sub{print get_version();
+                                print  "\n";
+                                print get_usage();
+                                print "\n";
+                                print get_help()."\n";
+                                exit(0);
+                },
+                'V|version'     =>
+                sub{print get_version()."\n";
+                                exit(0);
+                },
+                'd|device=i'    => \$device_id,
+                'db|device-bus=s'       => \$device_bus,
+                'v|verbosity'   =>      \$verbosity,
+                'vv'                    => sub{$verbosity=2},
+                'vvv'                   => sub{$verbosity=3},
+                'T|sensors=s' => \@sensor_list,
+                'w|warning=s' => \@warn_threshold,
+                'c|critical=s' => \@crit_threshold,
+                'show-na'       => \$show_na,
+                'cf|config=s' => \$config_file,
+				'no-throttle-alarm' => \$no_throttle_alarm,
+        ))){
+                print get_usage()."\n";
+                exit(1);
+        }
+        if(@ARGV){
+                #we don't want any unused command line arguments
+                print get_usage()."\n";
+                exit(3);
+        }
+
+        #the device ID is not present
+        if($device_id == -1 && $device_bus eq ''){
+                print "Error: Valid PCI bus string or device ID is required.\n";
+                print get_usage()."\n";
+                exit(3);
+        }
+
+        #Collect the informations about the device in the system
+        if( (get_all_device_status($device_id,$device_bus)) eq "NOK"){
+                print "Ensure to use a valid device id or device bus string.\n";
+                exit(3);
+        }
+
+        #Read a given config and change thresholds
+        if($config_file){
+                my $conf = read_config($config_file);
+                configure_thresholds($conf);
+        }
+
+        #TODO Is the sensor list only for performance data valid?
+        collect_perf_data(\@sensor_list);
+        my $status_level;
+        $status_level = check_perf_threshold(\@warn_threshold,\@crit_threshold);
+        $status_level = check_discrete_sensors($status_level,$no_throttle_alarm);
+        #check return values of threshold and discrete sensor function
+        if($status_level->[0] eq "Critical"){
+                $EXIT_CODE = 2;#Critical
+        }
+        if($status_level->[0] eq "Warning"){
+                $EXIT_CODE = 1;#Warning
+        }
+        print $status_level->[0]." - ".$DEVICE_LIST[0]->{'productName'}." ";
+        print get_status_string("Critical",$status_level,$verbosity);
+        print get_status_string("Warning",$status_level,$verbosity);
+        print "|";
+        print get_status_string("Performance",$PERF_DATA[0]);
+        print "\n".get_verbose_string($verbosity,$DEVICE_LIST[0],$show_na);
+
+        #shutdown nvml library
+        $result = nvmlShutdown();
+        if($result != $NVML_SUCCESS){
+                print "Debug: NVML shutdown failed.\n";
+                print "Error: ".nvmlErrorString($result).".\n";
+                exit(3);
+        }
+        exit($EXIT_CODE);
 }
+
